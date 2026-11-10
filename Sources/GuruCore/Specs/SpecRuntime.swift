@@ -14,7 +14,8 @@ public struct GeneratorContext: Sendable {
 /// Loads compiled Fig completion specs and runs their JavaScript generators. Not thread-safe: use from one queue.
 public final class SpecRuntime {
     private let context: JSContext
-    private let specsDirectory: URL
+    /// Searched in order, so earlier directories override later ones.
+    public let directories: [URL]
     private var cache: [String: SpecCommand?] = [:]
     private var execContext = GeneratorContext(cwd: "/", environment: [:], searchTerm: "")
 
@@ -36,8 +37,12 @@ public final class SpecRuntime {
     };
     """
 
-    public init(specsDirectory: URL) {
-        self.specsDirectory = specsDirectory
+    public convenience init(specsDirectory: URL) {
+        self.init(directories: [specsDirectory])
+    }
+
+    public init(directories: [URL]) {
+        self.directories = directories
         context = JSContext()!
         context.exceptionHandler = { _, _ in }
         let exec: @convention(block) (String) -> String = { [unowned self] input in self.execute(input) }
@@ -45,10 +50,7 @@ public final class SpecRuntime {
         context.evaluateScript(Self.bootstrap)
     }
 
-    public func hasSpec(named name: String) -> Bool {
-        guard let url = fileURL(for: name) else { return false }
-        return FileManager.default.fileExists(atPath: url.path)
-    }
+    public func hasSpec(named name: String) -> Bool { fileURL(for: name) != nil }
 
     public func spec(named name: String) -> SpecCommand? {
         if let cached = cache[name] { return cached }
@@ -59,26 +61,51 @@ public final class SpecRuntime {
 
     public func flushCache() { cache.removeAll() }
 
-    private func fileURL(for name: String) -> URL? {
+    public func fileURL(for name: String) -> URL? {
         guard !name.isEmpty, !name.hasPrefix("/"), !name.hasPrefix("."), !name.contains("..") else { return nil }
-        return specsDirectory.appendingPathComponent(name + ".js")
+        return directories.lazy
+            .map { $0.appendingPathComponent(name + ".js") }
+            .first { FileManager.default.fileExists(atPath: $0.path) }
+    }
+
+    /// Top-level command names with a spec, each mapped to the directory it loads from.
+    public func commandNames() -> [String: URL] {
+        var names: [String: URL] = [:]
+        for directory in directories.reversed() {
+            let files = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+            for file in files where file.hasSuffix(".js") { names[String(file.dropLast(3))] = directory }
+        }
+        return names
     }
 
     private func load(_ name: String) -> SpecCommand? {
-        guard let url = fileURL(for: name), let source = try? String(contentsOf: url, encoding: .utf8) else { return nil }
-        // Specs are ES modules ending in `export{x as default,...}`; JavaScriptCore's script mode needs a plain value.
-        guard let exportRange = source.range(of: "export{", options: .backwards) else { return nil }
-        let exports = source[exportRange.upperBound...].prefix { $0 != "}" }
-        guard let binding = exports.split(separator: ",")
-            .map({ $0.trimmingCharacters(in: .whitespaces) })
-            .first(where: { $0.hasSuffix(" as default") })?
-            .dropLast(" as default".count)
+        guard let url = fileURL(for: name), let source = try? String(contentsOf: url, encoding: .utf8),
+              let body = Self.scriptBody(module: source)
         else { return nil }
-        let script = "__json((function(){\(source[..<exportRange.lowerBound]);return \(binding);})())"
+        let script = "__json((function(){\(body)})())"
         guard let json = context.evaluateScript(script)?.toString(),
               let object = try? JSONSerialization.jsonObject(with: Data(json.utf8)) as? JSONObject
         else { return nil }
         return SpecCommand(object)
+    }
+
+    private static let namedExport = try! NSRegularExpression(pattern: #"export\s*\{([^}]*)\}"#)
+    private static let defaultExport = try! NSRegularExpression(pattern: #"export\s+default\s"#)
+
+    /// JavaScriptCore's script mode has no `export`, so the module's default export becomes a function's return value.
+    static func scriptBody(module source: String) -> String? {
+        let whole = NSRange(source.startIndex..., in: source)
+        if let match = namedExport.matches(in: source, range: whole).last,
+           let range = Range(match.range, in: source), let list = Range(match.range(at: 1), in: source) {
+            let entries: [[Substring]] = source[list].split(separator: ",").map { $0.split(whereSeparator: \.isWhitespace) }
+            guard let entry = entries.first(where: { $0.count == 3 && $0[1] == "as" && $0[2] == "default" }) else { return nil }
+            let binding = entry[0]
+            return "\(source[..<range.lowerBound]);return \(binding);"
+        }
+        if let match = defaultExport.matches(in: source, range: whole).last, let range = Range(match.range, in: source) {
+            return "\(source[..<range.lowerBound]);return \(source[range.upperBound...])"
+        }
+        return nil
     }
 
     // MARK: Generators

@@ -30,6 +30,10 @@ public enum Doctor {
         specCount > 0
             ? add(.ok, "Completion specs", "\(specCount) commands")
             : add(.failure, "Completion specs missing", GuruResources.specs.path, fix: "Scripts/fetch-specs.sh && Scripts/install.sh")
+        let userSpecs = ((try? fm.contentsOfDirectory(atPath: GuruPaths.userSpecs.path)) ?? []).filter { $0.hasSuffix(".js") }
+        if !userSpecs.isEmpty {
+            add(.info, "Your completion specs", "\(userSpecs.count) in \(GuruPaths.userSpecs.path)")
+        }
 
         // Shells
         Installer.hasIntegration("zsh")

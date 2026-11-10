@@ -4,6 +4,13 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- Your own completion specs: drop `<command>.js` into `~/.config/term-guru/specs` and run `tgr rescan`. They override the bundled ones.
+- `Resources/custom-specs` for hand-written specs that ship with TermGuru.
+- Completions for `tgr` itself, generated from the CLI at build time, including shell names for `tgr init` and alias names for `tgr alias rm`.
+- `tgr specs --source` shows which directory each spec loads from; `tgr alias list --names` prints only names.
+
 ## [0.2.0] - 2026-11-10
 
 ### Added

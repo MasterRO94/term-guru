@@ -24,7 +24,11 @@ public enum GuruResources {
         return URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("Resources")
     }
 
+    /// Fig specs plus the generated `tgr` spec; `Scripts/fetch-specs.sh` replaces this directory.
     public static var specs: URL { root.appendingPathComponent("specs", isDirectory: true) }
+    /// Hand-written specs tracked in the repository.
+    public static var customSpecs: URL { root.appendingPathComponent("custom-specs", isDirectory: true) }
+    public static var specDirectories: [URL] { [GuruPaths.userSpecs, customSpecs, specs] }
     public static var shell: URL { root.appendingPathComponent("shell", isDirectory: true) }
 }
 

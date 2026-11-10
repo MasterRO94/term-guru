@@ -21,7 +21,7 @@ final class ShellSession {
 final class Coordinator {
     private let log = FileLog(name: "app.log")
     private let engineQueue = DispatchQueue(label: "dev.termguru.engine", qos: .userInteractive)
-    private lazy var engine = Engine(specs: SpecRuntime(specsDirectory: GuruResources.specs))
+    private lazy var engine = Engine(specs: SpecRuntime(directories: GuruResources.specDirectories))
     private var server: SocketServer?
     private var sessions: [Int: ShellSession] = [:]
     private var connections: [Int: SocketConnection] = [:]
@@ -65,7 +65,7 @@ final class Coordinator {
         if !headless { updates.start() }
         // Warm the JavaScript engine so the first keystroke is not the slow one.
         engineQueue.async { [engine] in _ = engine.suggest(EngineRequest(buffer: "git ", cursor: 4, cwd: "/", path: "")) }
-        log.write("started, specs at \(GuruResources.specs.path)")
+        log.write("started, specs at \(GuruResources.specDirectories.map(\.path).joined(separator: ", "))")
     }
 
     func stop() { server?.stop() }
@@ -158,7 +158,7 @@ final class Coordinator {
                 "ides": caret.connectedIDEs.map(Int.init),
                 "paused": paused,
                 "accessibility": AXIsProcessTrusted(),
-                "specs": GuruResources.specs.path,
+                "specs": GuruResources.specDirectories.map(\.path),
             ]
             let data = (try? JSONSerialization.data(withJSONObject: payload)) ?? Data("{}".utf8)
             connection.send(String(decoding: data, as: UTF8.self))

@@ -27,7 +27,7 @@ To build a specific release, check out its tag first, for example `git checkout 
 `Scripts/install.sh` does the following:
 
 1. Downloads the Fig completion specs into `Resources/specs` if they are missing (`Scripts/fetch-specs.sh`).
-2. Builds `build/TermGuru.app` (`Scripts/build.sh`) and copies it to `~/Applications/TermGuru.app`.
+2. Builds `build/TermGuru.app` (`Scripts/build.sh`), generating the `tgr` spec from the CLI itself, and copies it to `~/Applications/TermGuru.app`.
 3. Links the CLI to `~/.local/bin/tgr`. Make sure `~/.local/bin` is on your `PATH`.
 4. Runs `tgr install`, which adds one line to `~/.zshrc` and `~/.bashrc`, installs the caret plugin into every JetBrains IDE config folder, adds a login item and starts the app.
 
@@ -135,11 +135,67 @@ The **Aliases** tab manages `~/.config/term-guru/aliases.sh`; open shells pick u
 | `tgr alias` / `tgr alias rm gs` | List / remove aliases |
 | `tgr settings` | Open the settings window |
 | `tgr status`, `start`, `stop`, `restart`, `logs` | App control |
-| `tgr specs [filter]` | List commands that have completion specs |
+| `tgr specs [filter]` | List commands that have completion specs (`--source` shows where each loads from) |
 | `tgr complete 'git ch'` | Print suggestions without the popup |
 | `tgr update` / `tgr update --check` | Install the newest release / only look for one |
 | `tgr install` / `tgr uninstall` | Add or remove shell hooks, the JetBrains plugin and the login item |
 | `tgr --version` | Installed version |
+
+## Completion specs
+
+Suggestions for a command's arguments come from [Fig completion specs](https://fig.io/docs/reference/subcommand): one compiled JavaScript file per command, named after it (`git.js` for `git`). TermGuru looks in three directories and uses the first file it finds:
+
+| Directory | Holds | Tracked |
+| --- | --- | --- |
+| `~/.config/term-guru/specs` | Your own specs. Overrides everything below | — |
+| `Resources/custom-specs` | Hand-written specs that ship with TermGuru | yes |
+| `Resources/specs` | Fig specs from `@withfig/autocomplete`, plus `tgr.js` generated at build time | no |
+
+In the installed app the last two live in `TermGuru.app/Contents/Resources`. `Scripts/fetch-specs.sh` replaces `Resources/specs` entirely, so never edit it by hand.
+
+### Write a spec
+
+Create `~/.config/term-guru/specs/<command>.js`, run `tgr rescan`, and check it with `tgr complete '<command> '`. No rebuild is needed:
+
+```js
+var spec = {
+  name: "deploy",
+  description: "Ship the current branch",
+  subcommands: [
+    { name: "staging", description: "Deploy to staging" },
+    { name: "prod", description: "Deploy to production",
+      options: [{ name: ["-f", "--force"], description: "Skip checks" }] },
+  ],
+  options: [{ name: "--env", args: { name: "file", template: "filepaths" } }],
+  args: {
+    name: "service",
+    generators: { script: ["sh", "-c", "ls services"], splitOn: "\n" },
+  },
+};
+export{spec as default};
+```
+
+The file must be plain JavaScript without imports, ending in `export default spec;` or `export{spec as default}`. Fig's TypeScript specs compile to this with `esbuild --format=esm`. Generators (`script`, `postProcess`, `custom`, `generateSpec`) run in JavaScriptCore; their shell commands time out after 2 seconds, or the generator's `timeout` up to 3.
+
+To ship a spec with TermGuru instead, put the same file in `Resources/custom-specs` and rebuild.
+
+### The `tgr` spec
+
+`Scripts/build.sh` writes `Resources/specs/tgr.js` from the CLI's own argument definitions, so new `tgr` subcommands, options and help texts appear in suggestions after the next build. To suggest values for an argument, give it a completion kind in `Sources/tgr/main.swift`:
+
+| `completion:` | Suggests |
+| --- | --- |
+| `.list(["zsh", "bash"])` | Those values |
+| `.file()` / `.directory` | Files and folders / folders only |
+| `.shellCommand("tgr alias list --names")` | One suggestion per line of the command's output |
+
+`CaseIterable` enum arguments list their cases without a completion kind. Hidden commands and options (`shouldDisplay: false`, `help: .hidden`) are left out.
+
+To regenerate it without a full build:
+
+```bash
+swift build && .build/debug/tgr --experimental-dump-help | .build/debug/tgr _fig-spec > Resources/specs/tgr.js
+```
 
 ## Troubleshooting
 

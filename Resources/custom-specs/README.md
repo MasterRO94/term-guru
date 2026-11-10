@@ -1,0 +1,1 @@
+Hand-written completion specs that ship with TermGuru, one `<command>.js` per command. They override the Fig specs in `Resources/specs`, and `~/.config/term-guru/specs` overrides them. See [Completion specs](../../docs/app.md#completion-specs).

@@ -10,7 +10,7 @@ struct Guru: ParsableCommand {
         subcommands: [
             Doctor.self, Rescan.self, Alias.self, Install.self, Uninstall.self,
             Settings.self, Start.self, Stop.self, Restart.self, Status.self, Logs.self, Specs.self, Update.self,
-            Init.self, Complete.self, Relay.self,
+            Init.self, Complete.self, Relay.self, FigSpec.self,
         ]
     )
 }
@@ -33,7 +33,7 @@ enum Style {
 struct Init: ParsableCommand {
     static let configuration = CommandConfiguration(abstract: "Print the shell integration loader. Use: eval \"$(tgr init zsh)\"")
 
-    @Argument(help: "zsh or bash") var shell: String
+    @Argument(help: "zsh or bash", completion: .list(["zsh", "bash"])) var shell: String
 
     func run() {
         guard ["zsh", "bash"].contains(shell) else { fail("unsupported shell '\(shell)' (zsh, bash)") }
@@ -111,8 +111,11 @@ struct Alias: ParsableCommand {
     struct List: ParsableCommand {
         static let configuration = CommandConfiguration(abstract: "List aliases created with guru.")
 
+        @Flag(help: "Print only the names, one per line.") var names = false
+
         func run() {
             let entries = AliasStore().list()
+            if names { entries.forEach { print($0.name) }; return }
             if entries.isEmpty { print("No aliases yet. Try: tgr alias add gs 'git status'"); return }
             let width = entries.map(\.name.count).max() ?? 0
             for entry in entries {
@@ -124,7 +127,7 @@ struct Alias: ParsableCommand {
     struct Remove: ParsableCommand {
         static let configuration = CommandConfiguration(commandName: "rm", abstract: "Remove an alias.")
 
-        @Argument var name: String
+        @Argument(completion: .shellCommand("tgr alias list --names")) var name: String
 
         func run() {
             do { try AliasStore().remove(name: name) } catch { fail("\(error)") }
@@ -288,12 +291,17 @@ struct Specs: ParsableCommand {
 
     @Argument(help: "Filter by name.") var filter: String?
 
+    @Flag(help: "Show the directory each spec loads from.") var source = false
+
     func run() {
-        let names = ((try? FileManager.default.contentsOfDirectory(atPath: GuruResources.specs.path)) ?? [])
-            .filter { $0.hasSuffix(".js") }.map { String($0.dropLast(3)) }
-            .filter { filter.map($0.contains) ?? true }.sorted()
-        print(names.joined(separator: "\n"))
-        if filter == nil { print(Style.dim("\(names.count) specs in \(GuruResources.specs.path)")) }
+        let specs = SpecRuntime(directories: GuruResources.specDirectories).commandNames()
+            .filter { name, _ in filter.map(name.contains) ?? true }
+        for name in specs.keys.sorted() {
+            print(source ? "\(name)  \(Style.dim(specs[name]!.path))" : name)
+        }
+        guard filter == nil else { return }
+        print(Style.dim("\(specs.count) specs from, in lookup order:"))
+        for directory in GuruResources.specDirectories { print(Style.dim("  \(directory.path)")) }
     }
 }
 
@@ -301,12 +309,12 @@ struct Complete: ParsableCommand {
     static let configuration = CommandConfiguration(abstract: "Print suggestions for a command line (debugging aid).")
 
     @Argument(help: "Text left of the cursor.") var line: String
-    @Option(help: "Directory holding compiled specs.") var specs: String?
+    @Option(help: "Directory holding compiled specs, instead of the usual ones.", completion: .directory) var specs: String?
     @Option var limit: Int = 12
 
     func run() {
-        let directory = specs.map { URL(fileURLWithPath: $0) } ?? GuruResources.specs
-        let engine = Engine(specs: SpecRuntime(specsDirectory: directory))
+        let directories = specs.map { [URL(fileURLWithPath: $0)] } ?? GuruResources.specDirectories
+        let engine = Engine(specs: SpecRuntime(directories: directories))
         let request = EngineRequest(
             buffer: line, cursor: line.count, cwd: FileManager.default.currentDirectoryPath,
             path: ProcessInfo.processInfo.environment["PATH"] ?? ""
@@ -351,3 +359,12 @@ struct Relay: ParsableCommand {
 }
 
 Guru.main()
+
+/// Scripts/build.sh pipes `tgr --experimental-dump-help` through this to produce the bundled tgr spec.
+struct FigSpec: ParsableCommand {
+    static let configuration = CommandConfiguration(commandName: "_fig-spec", shouldDisplay: false)
+
+    func run() throws {
+        print(try ToolInfoSpec.module(fromDumpHelp: FileHandle.standardInput.readDataToEndOfFile()), terminator: "")
+    }
+}

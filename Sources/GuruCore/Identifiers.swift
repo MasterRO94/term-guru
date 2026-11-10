@@ -23,5 +23,6 @@ public enum GuruPaths {
     }
     public static var aliases: URL { config.appendingPathComponent("aliases.sh") }
     public static var settings: URL { config.appendingPathComponent("settings.json") }
+    public static var userSpecs: URL { config.appendingPathComponent("specs", isDirectory: true) }
     public static var installedApp: URL { home.appendingPathComponent("Applications/TermGuru.app", isDirectory: true) }
 }
