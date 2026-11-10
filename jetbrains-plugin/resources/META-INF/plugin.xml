@@ -1,0 +1,12 @@
+<idea-plugin>
+    <id>dev.termguru.caret</id>
+    <name>TermGuru Caret Bridge</name>
+    <version>0.0.0</version>
+    <vendor>TermGuru</vendor>
+    <description>Reports the terminal caret position to the TermGuru autocomplete app over a local socket.</description>
+    <idea-version since-build="251"/>
+    <depends>com.intellij.modules.platform</depends>
+    <applicationListeners>
+        <listener class="dev.termguru.CaretBridge" topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
+</idea-plugin>

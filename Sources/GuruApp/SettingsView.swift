@@ -1,0 +1,234 @@
+import SwiftUI
+import GuruCore
+
+final class SettingsModel: ObservableObject {
+    @Published var settings = GuruSettings.load() { didSet { settings.save(); onChange?(settings) } }
+    @Published var launchAtLogin = Installer.launchesAtLogin
+    @Published var paused = false { didSet { onPause?(paused) } }
+    @Published var aliases: [AliasEntry] = []
+    @Published var checks: [DoctorCheck] = []
+    @Published var checking = false
+
+    var onChange: ((GuruSettings) -> Void)?
+    var onPause: ((Bool) -> Void)?
+    var onRescan: (() -> Void)?
+
+    struct AliasEntry: Identifiable, Hashable {
+        var name: String
+        var value: String
+        var id: String { name }
+    }
+
+    func reloadAliases() {
+        aliases = AliasStore().list().map { AliasEntry(name: $0.name, value: $0.value) }
+    }
+
+    func addAlias(name: String, value: String) -> String? {
+        do {
+            try AliasStore().add(name: name, value: value)
+            reloadAliases()
+            return nil
+        } catch { return "\(error)" }
+    }
+
+    func removeAlias(_ name: String) {
+        try? AliasStore().remove(name: name)
+        reloadAliases()
+    }
+
+    func runDoctor() {
+        checking = true
+        // Doctor queries this app over its own socket, so it must not run on the main queue.
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = Doctor.run()
+            DispatchQueue.main.async {
+                self.checks = result
+                self.checking = false
+            }
+        }
+    }
+}
+
+struct SettingsView: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        TabView {
+            Tab("General", systemImage: "gearshape") { GeneralPane(model: model) }
+            Tab("Aliases", systemImage: "link") { AliasesPane(model: model) }
+            Tab("Diagnostics", systemImage: "stethoscope") { DiagnosticsPane(model: model) }
+        }
+        .frame(width: 560, height: 440)
+    }
+}
+
+private struct GeneralPane: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Open at login", isOn: Binding(
+                    get: { model.launchAtLogin },
+                    set: { value in
+                        try? Installer.setLaunchAtLogin(value)
+                        model.launchAtLogin = Installer.launchesAtLogin
+                    }
+                ))
+                Toggle("Pause suggestions", isOn: $model.paused)
+            }
+            Section("Popup") {
+                Stepper("Visible rows: \(model.settings.maxRows)", value: $model.settings.maxRows, in: 4...14)
+                Toggle("Show description panel", isOn: $model.settings.showDetails)
+            }
+            Section {
+                Picker("Return on a selected suggestion", selection: $model.settings.enterAction) {
+                    Text("Inserts it").tag(EnterAction.insert)
+                    Text("Runs it").tag(EnterAction.execute)
+                }
+            } header: {
+                Text("Keys")
+            } footer: {
+                Text("⌘Return always runs the selected suggestion. Return without selecting one runs the line as typed.")
+            }
+            Section {
+                Toggle("Suggest commands from shell history", isOn: $model.settings.historySuggestions)
+                LabeledContent("Commands and specs") {
+                    Button("Rescan Now") { model.onRescan?() }
+                }
+            } header: {
+                Text("Sources")
+            } footer: {
+                Text("Rescan after installing new command-line tools. Same as `tgr rescan`.")
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+private struct AliasesPane: View {
+    @ObservedObject var model: SettingsModel
+    @State private var name = ""
+    @State private var command = ""
+    @State private var error: String?
+    @State private var selection: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Table(model.aliases, selection: $selection) {
+                TableColumn("Alias") { Text($0.name).font(.system(.body, design: .monospaced)) }
+                    .width(min: 80, ideal: 110, max: 160)
+                TableColumn("Command") { Text($0.value).font(.system(.body, design: .monospaced)).lineLimit(1) }
+            }
+            .overlay {
+                if model.aliases.isEmpty {
+                    ContentUnavailableView("No Aliases", systemImage: "link", description: Text("Add one below or run `tgr alias add gs 'git status'`."))
+                }
+            }
+            HStack {
+                TextField("Name", text: $name).frame(width: 110)
+                TextField("Command", text: $command).onSubmit(add)
+                Button("Add", action: add)
+                    .disabled(name.isEmpty || command.isEmpty)
+                Button("Remove", role: .destructive) {
+                    if let selection { model.removeAlias(selection) }
+                    selection = nil
+                }
+                .disabled(selection == nil)
+            }
+            .textFieldStyle(.roundedBorder)
+            .font(.system(.body, design: .monospaced))
+            if let error {
+                Text(error).font(.callout).foregroundStyle(.red)
+            } else {
+                Text("Aliases load in open shells at their next prompt.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+        }
+        .padding(20)
+        .onAppear { model.reloadAliases() }
+    }
+
+    private func add() {
+        error = model.addAlias(name: name.trimmingCharacters(in: .whitespaces), value: command)
+        if error == nil { name = ""; command = "" }
+    }
+}
+
+private struct DiagnosticsPane: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            List(model.checks) { check in
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Image(systemName: symbol(check.level))
+                        .foregroundStyle(color(check.level))
+                        .frame(width: 18)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(check.title)
+                        if !check.detail.isEmpty {
+                            Text(check.detail).font(.callout).foregroundStyle(.secondary)
+                        }
+                        if let fix = check.fix, check.level != .ok {
+                            Text(fix).font(.system(.callout, design: .monospaced)).foregroundStyle(.secondary).textSelection(.enabled)
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+            HStack {
+                Button("Check Again") { model.runDoctor() }
+                    .disabled(model.checking)
+                if model.checking { ProgressView().controlSize(.small) }
+                Spacer()
+                Button("Open Accessibility Settings…") {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+            }
+        }
+        .padding(20)
+        .onAppear { model.runDoctor() }
+    }
+
+    private func symbol(_ level: DoctorCheck.Level) -> String {
+        switch level {
+        case .ok: "checkmark.circle.fill"
+        case .warning: "exclamationmark.triangle.fill"
+        case .failure: "xmark.octagon.fill"
+        case .info: "info.circle"
+        }
+    }
+
+    private func color(_ level: DoctorCheck.Level) -> Color {
+        switch level {
+        case .ok: .green
+        case .warning: .orange
+        case .failure: .red
+        case .info: .secondary
+        }
+    }
+}
+
+final class SettingsWindowController {
+    let model = SettingsModel()
+    private var window: NSWindow?
+
+    func show() {
+        if window == nil {
+            let window = NSWindow(
+                contentRect: .zero, styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+                backing: .buffered, defer: false
+            )
+            window.title = "TermGuru Settings"
+            window.contentViewController = NSHostingController(rootView: SettingsView(model: model))
+            window.isReleasedWhenClosed = false
+            window.center()
+            self.window = window
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKeyAndOrderFront(nil)
+    }
+}
