@@ -4,6 +4,12 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Fixed
+
+- The word after a redirection (`>`, `>>`, `>|`, `<`, `<>`, `&>`, `2>` and the like) lists files instead of the command's options, with or without a space before it. Heredocs, here-strings and fd copies such as `2>&1` get no suggestions, and the redirection no longer hides the command's own completions: `make 2>&1 -` lists `make` options again.
+- zsh in vi mode: Esc hides the popup and enters command mode in one press, the popup hides in command mode, and Esc acts after 100 ms instead of 400 ms while the popup shows when `KEYTIMEOUT` is at its default. A custom `KEYTIMEOUT` or Esc binding is kept.
+- bash in vi mode (`set -o vi`): the popup works in insert mode, and Esc hides it and enters movement mode.
+
 ## [0.2.3] - 2026-11-10
 
 ### Fixed

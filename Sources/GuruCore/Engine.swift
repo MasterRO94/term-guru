@@ -47,16 +47,22 @@ public final class Engine {
         if cursor < characters.count, !characters[cursor].isWhitespace { return [] }
         let left = String(characters[..<cursor])
         let line = Tokenizer.parse(left)
-        if line.tokens.count == 1, line.partial.isEmpty { return [] }
-
-        history.reload()
         var groups: [Group] = []
-        if line.tokens.count == 1 {
-            groups.append((commandCandidates(request, replace: line.rawPartial.count), line.partial))
-        } else {
-            groups += argumentGroups(line, request: request, depth: 0)
+        switch line.redirect {
+        case .file?:
+            groups = [FileSuggestions.list(partial: line.partial, rawPartial: line.rawPartial, cwd: request.cwd, foldersOnly: false)]
+        case .some(.none):
+            return []
+        case nil:
+            if line.tokens.count == 1, line.partial.isEmpty { return [] }
+            history.reload()
+            if line.tokens.count == 1 {
+                groups.append((commandCandidates(request, replace: line.rawPartial.count), line.partial))
+            } else {
+                groups += argumentGroups(line, request: request, depth: 0)
+            }
+            if useHistory { groups.append(historyGroup(left: left)) }
         }
-        if useHistory { groups.append(historyGroup(left: left)) }
 
         var merged: [Suggestion] = []
         for group in groups { merged += Fuzzy.rank(group.items, query: group.query, limit: limit) }

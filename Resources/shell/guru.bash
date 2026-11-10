@@ -73,42 +73,50 @@ _guru_key() {
         V*) _guru_apply "$line" ;;
         I*) _guru_apply "$line"; pass=0; break ;;
         R*) _guru_apply "$line"; break ;;
-        N*) pass=0; break ;;
+        # Esc dismisses and still enters movement mode.
+        N*) [[ $name == esc ]] || pass=0; break ;;
         *) break ;;
       esac
     done
   fi
-  if (( pass )); then
-    bind -m emacs "\"\C-x\C-_2${name}\": ${_guru_orig[$name]}"
-  else
-    bind -m emacs "\"\C-x\C-_2${name}\": \"\""
-  fi
+  local action='""' map
+  (( pass )) && action=${_guru_orig[$name]}
+  for map in emacs vi-insert; do
+    bind -m "$map" "\"\C-x\C-_2${name}\": ${action}"
+  done
+}
+
+_guru_bind_keymap() {
+  local map=$1 code key name
+  bind -m "$map" -x '"\C-x\C-_h": _guru_hook'
+  for (( code = 32; code < 127; code++ )); do
+    printf -v key '\\%03o' "$code"
+    bind -m "$map" "\"\C-x\C-_s${key}\": self-insert"
+    bind -m "$map" "\"${key}\": \"\C-x\C-_s${key}\C-x\C-_h\""
+  done
+  bind -m "$map" '"\C-x\C-_b": backward-delete-char'
+  bind -m "$map" '"\C-?": "\C-x\C-_b\C-x\C-_h"'
+  bind -m "$map" '"\C-h": "\C-x\C-_b\C-x\C-_h"'
+
+  for name in tab enter up down esc; do
+    bind -m "$map" -x "\"\C-x\C-_1${name}\": _guru_key ${name}"
+  done
+  bind -m "$map" '"\C-i": "\C-x\C-_1tab\C-x\C-_2tab\C-x\C-_h"'
+  # No trailing hook after Enter: it would be typed into the next prompt.
+  bind -m "$map" '"\C-m": "\C-x\C-_1enter\C-x\C-_2enter"'
+  bind -m "$map" '"\e[A": "\C-x\C-_1up\C-x\C-_2up\C-x\C-_h"'
+  bind -m "$map" '"\eOA": "\C-x\C-_1up\C-x\C-_2up\C-x\C-_h"'
+  bind -m "$map" '"\e[B": "\C-x\C-_1down\C-x\C-_2down\C-x\C-_h"'
+  bind -m "$map" '"\eOB": "\C-x\C-_1down\C-x\C-_2down\C-x\C-_h"'
 }
 
 _guru_bind() {
-  local code key
-  bind -m emacs -x '"\C-x\C-_h": _guru_hook'
-  for (( code = 32; code < 127; code++ )); do
-    printf -v key '\\%03o' "$code"
-    bind -m emacs "\"\C-x\C-_s${key}\": self-insert"
-    bind -m emacs "\"${key}\": \"\C-x\C-_s${key}\C-x\C-_h\""
-  done
-  bind -m emacs '"\C-x\C-_b": backward-delete-char'
-  bind -m emacs '"\C-?": "\C-x\C-_b\C-x\C-_h"'
-  bind -m emacs '"\C-h": "\C-x\C-_b\C-x\C-_h"'
-
-  _guru_orig=([tab]=complete [enter]=accept-line [up]=previous-history [down]=next-history)
-  local name
-  for name in tab enter up down; do
-    bind -m emacs -x "\"\C-x\C-_1${name}\": _guru_key ${name}"
-  done
-  bind -m emacs '"\C-i": "\C-x\C-_1tab\C-x\C-_2tab\C-x\C-_h"'
-  # No trailing hook after Enter: it would be typed into the next prompt.
-  bind -m emacs '"\C-m": "\C-x\C-_1enter\C-x\C-_2enter"'
-  bind -m emacs '"\e[A": "\C-x\C-_1up\C-x\C-_2up\C-x\C-_h"'
-  bind -m emacs '"\eOA": "\C-x\C-_1up\C-x\C-_2up\C-x\C-_h"'
-  bind -m emacs '"\e[B": "\C-x\C-_1down\C-x\C-_2down\C-x\C-_h"'
-  bind -m emacs '"\eOB": "\C-x\C-_1down\C-x\C-_2down\C-x\C-_h"'
+  _guru_orig=([tab]=complete [enter]=accept-line [up]=previous-history [down]=next-history [esc]=vi-movement-mode)
+  _guru_bind_keymap emacs
+  _guru_bind_keymap vi-insert
+  # Only vi-insert: in emacs mode \e prefixes every arrow and Meta key, so binding it alone
+  # would hold each Esc for readline's keyseq-timeout. No hook after it: movement mode has none.
+  bind -m vi-insert '"\e": "\C-x\C-_1esc\C-x\C-_2esc"'
 }
 
 _guru_sync_aliases() {

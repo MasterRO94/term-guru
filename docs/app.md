@@ -108,9 +108,13 @@ While the popup shows:
 | Tab | Insert the highlighted suggestion |
 | Return | Insert the highlighted suggestion, or run it, depending on the setting. Runs the line as typed when the current word is empty or already matches the top suggestion and you have not moved with ↑/↓ |
 | ⌘Return | Insert the highlighted suggestion and run it |
-| Esc | Hide the popup until you move to another word |
+| Esc | Hide the popup until you move to another word. In vi mode it also switches to command mode, in the same press |
 
 ⌘Return needs the Accessibility permission: terminals keep that shortcut for themselves, so TermGuru hands it to the shell as a plain Return while the popup is visible.
+
+In vi mode (`bindkey -v` in zsh, `set -o vi` in bash) the popup works in insert mode and hides in command mode. zsh waits only 100 ms for Esc while the popup shows, if `KEYTIMEOUT` is at its default; a value you set yourself is kept. bash waits for readline's `keyseq-timeout` (500 ms by default) before it acts on Esc. In bash's emacs mode Esc is left alone, because it starts every Meta and arrow key there, so it does not hide the popup.
+
+After a redirection (`>`, `>>`, `<`, `2>`, `&>` and the like) the popup lists files, whatever the command is. Heredocs (`<<`), here-strings (`<<<`) and fd copies (`2>&1`) get no suggestions.
 
 ## Settings
 
