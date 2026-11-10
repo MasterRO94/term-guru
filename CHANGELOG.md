@@ -4,6 +4,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-10
+
 ### Fixed
 
 - No autocomplete and no `tgr` command when `~/.local/bin` is not on `PATH`, as on a stock Mac: the shell line now adds it. Run `Scripts/install.sh` or `tgr install` to update the line in `~/.zshrc` and `~/.bashrc`.
@@ -65,7 +67,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 - `tgr` CLI: `doctor`, `rescan`, `alias`, `install`, `uninstall`, `settings`, `status`, `start`, `stop`, `restart`, `logs`, `specs`, `complete`.
 - Settings window (General, Aliases, Diagnostics) and menu bar item.
 
-[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/MasterRO94/term-guru/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/MasterRO94/term-guru/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/MasterRO94/term-guru/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/MasterRO94/term-guru/compare/v0.1.1...v0.1.2
