@@ -4,6 +4,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-10
+
 ### Fixed
 
 - The app's Diagnostics tab no longer reports "tgr not on PATH" when new shells get `~/.local/bin` from the TermGuru line; the app itself runs with macOS's bare `PATH`.
@@ -71,7 +73,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 - `tgr` CLI: `doctor`, `rescan`, `alias`, `install`, `uninstall`, `settings`, `status`, `start`, `stop`, `restart`, `logs`, `specs`, `complete`.
 - Settings window (General, Aliases, Diagnostics) and menu bar item.
 
-[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/MasterRO94/term-guru/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/MasterRO94/term-guru/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/MasterRO94/term-guru/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/MasterRO94/term-guru/compare/v0.1.2...v0.2.0
