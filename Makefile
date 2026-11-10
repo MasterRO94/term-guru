@@ -40,9 +40,8 @@ install: ## Build, install to ~/Applications, hook shells and IDEs
 install-replace: ## Install and comment out Figxit / Kiro CLI hooks
 	Scripts/install.sh --replace-others
 
-update: ## Pull the latest source and reinstall
-	git pull --ff-only
-	Scripts/install.sh
+update: ## Install the newest release (fetch, rebuild, reinstall)
+	$(TGR) update
 
 uninstall: ## Remove shell hooks, JetBrains plugin and login item
 	$(TGR) uninstall

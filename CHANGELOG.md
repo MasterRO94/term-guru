@@ -4,6 +4,16 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- Updates from release tags: the app checks for a newer `vX.Y.Z` tag, offers **Update to X.Y.Z…** in the menu bar, then fetches the source, rebuilds, reinstalls and restarts. `tgr update` does the same from a terminal.
+- **Settings › General › Updates** with a switch for the automatic check and a *Check Now* button.
+- `tgr doctor` reports when a newer release is available.
+
+### Changed
+
+- `make update` runs `tgr update` instead of `git pull`.
+
 ## [0.1.2] - 2026-11-10
 
 ### Added

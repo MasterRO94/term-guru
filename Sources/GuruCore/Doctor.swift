@@ -98,6 +98,11 @@ public enum Doctor {
         Installer.launchesAtLogin
             ? add(.ok, "Starts at login")
             : add(.info, "Does not start at login", "", fix: "tgr install")
+
+        if let latest = UpdateStore().load().latest, SemVer.normalize(GuruVersion.current) != nil,
+           SemVer.isNewer(latest, than: GuruVersion.current) {
+            add(.warning, "Update available", "\(GuruVersion.current) is installed, \(latest) is released.", fix: "tgr update")
+        }
         return checks
     }
 }

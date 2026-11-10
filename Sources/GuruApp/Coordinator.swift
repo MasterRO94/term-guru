@@ -36,6 +36,7 @@ final class Coordinator {
     private var statusItem: NSStatusItem?
     private let settingsWindow = SettingsWindowController()
     private var pauseItem: NSMenuItem?
+    private let updates = UpdateController()
     private let headless = ProcessInfo.processInfo.environment["GURU_HEADLESS"] != nil
 
     func start() {
@@ -59,7 +60,9 @@ final class Coordinator {
         settings.onChange = { [weak self] in self?.apply($0) }
         settings.onPause = { [weak self] in self?.setPaused($0) }
         settings.onRescan = { [weak self] in self?.rescan() }
+        settings.onCheckUpdates = { [weak self] in self?.updates.checkNow() }
         apply(settings.settings)
+        if !headless { updates.start() }
         // Warm the JavaScript engine so the first keystroke is not the slow one.
         engineQueue.async { [engine] in _ = engine.suggest(EngineRequest(buffer: "git ", cursor: 4, cwd: "/", path: "")) }
         log.write("started, specs at \(GuruResources.specs.path)")
@@ -316,6 +319,7 @@ final class Coordinator {
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
+        if !headless { menu.addItem(updates.menuItem) }
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit TermGuru", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         item.menu = menu
@@ -326,6 +330,7 @@ final class Coordinator {
         popup.model.maxRows = settings.maxRows
         popup.model.showDetails = settings.showDetails
         enterAction = settings.enterAction
+        updates.automatic = settings.checkForUpdates
         engineQueue.async { [engine] in engine.useHistory = settings.historySuggestions }
     }
 

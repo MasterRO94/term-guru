@@ -9,6 +9,7 @@ public struct GuruSettings: Codable, Equatable, Sendable {
     public var historySuggestions = true
     public var showDetails = true
     public var enterAction = EnterAction.insert
+    public var checkForUpdates = true
 
     public init() {}
 
@@ -18,6 +19,7 @@ public struct GuruSettings: Codable, Equatable, Sendable {
         historySuggestions = try container.decodeIfPresent(Bool.self, forKey: .historySuggestions) ?? true
         showDetails = try container.decodeIfPresent(Bool.self, forKey: .showDetails) ?? true
         enterAction = try container.decodeIfPresent(EnterAction.self, forKey: .enterAction) ?? .insert
+        checkForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checkForUpdates) ?? true
     }
 
     public static func load() -> GuruSettings {

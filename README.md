@@ -12,6 +12,8 @@ Scripts/install.sh
 
 `make` lists shortcuts for building, installing, restarting, testing and releasing.
 
+The app offers new releases from its menu bar item and rebuilds itself from this checkout; `tgr update` does the same. See [Update](docs/app.md#update).
+
 ## Documentation
 
 - [App](docs/app.md) — requirements, building on a new machine, settings, keys, `tgr` CLI, troubleshooting

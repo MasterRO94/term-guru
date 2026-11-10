@@ -9,7 +9,7 @@ struct Guru: ParsableCommand {
         version: GuruVersion.current,
         subcommands: [
             Doctor.self, Rescan.self, Alias.self, Install.self, Uninstall.self,
-            Settings.self, Start.self, Stop.self, Restart.self, Status.self, Logs.self, Specs.self,
+            Settings.self, Start.self, Stop.self, Restart.self, Status.self, Logs.self, Specs.self, Update.self,
             Init.self, Complete.self, Relay.self,
         ]
     )
@@ -216,6 +216,46 @@ struct Restart: ParsableCommand {
         usleep(600_000)
         guard AppControl.start() else { fail("could not start TermGuru.app") }
         print("running")
+    }
+}
+
+struct Update: ParsableCommand {
+    static let configuration = CommandConfiguration(abstract: "Install the newest release: pull the source, rebuild and reinstall.")
+
+    @Flag(help: "Only report whether a newer release exists.") var check = false
+    @Flag(name: .customLong("run"), help: .hidden) var detached = false
+    @Flag(help: .hidden) var echo = false
+    @Option(help: .hidden) var source: String?
+    @Option(help: .hidden) var identity: String = "-"
+    @Option(help: .hidden) var release: String?
+
+    func run() {
+        if detached {
+            guard let source, let release else { fail("--run needs --source and --release") }
+            let runner = UpdateRunner(source: UpdateSource(path: source, identity: identity), version: release, echo: echo)
+            Foundation.exit(runner.run() ? 0 : 1)
+        }
+        guard SemVer.normalize(GuruVersion.current) != nil else { fail("this is a development build; run Scripts/install.sh") }
+        let resolved = UpdateSource.resolve()
+        guard let checkout = resolved.source else { fail(resolved.reason ?? "source checkout not found") }
+        let latest: String
+        switch LatestRelease.fetch(from: checkout) {
+        case .found(let version): latest = version
+        case .noReleases: fail("origin has no release tags")
+        case .unreachable(let reason): fail("could not reach origin\(reason.isEmpty ? "" : ": \(reason)")")
+        }
+        UpdateStore().mutate { $0.latest = latest; $0.checkedAt = Date() }
+        print("installed \(GuruVersion.current)\nlatest    \(latest)")
+        guard SemVer.isNewer(latest, than: GuruVersion.current) else { print("up to date"); return }
+        if check { print("run `tgr update` to install it"); return }
+        if let busy = UpdateStore().currentRun(), busy.state.isBusy { fail("an update to \(busy.version) is already running") }
+
+        let tool: URL
+        do { tool = try UpdateLauncher.stage() } catch { fail("could not stage the updater: \(error)") }
+        let arguments = [tool.path] + UpdateLauncher.arguments(source: checkout, version: latest, echo: true)
+        var argv = arguments.map { strdup($0) } + [nil]
+        execv(tool.path, &argv)
+        fail("could not start the updater: \(String(cString: strerror(errno)))")
     }
 }
 

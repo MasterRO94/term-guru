@@ -19,6 +19,7 @@ final class SettingsModel: ObservableObject {
     var onChange: ((GuruSettings) -> Void)?
     var onPause: ((Bool) -> Void)?
     var onRescan: (() -> Void)?
+    var onCheckUpdates: (() -> Void)?
 
     struct AliasEntry: Identifiable, Hashable {
         var name: String
@@ -107,6 +108,16 @@ private struct GeneralPane: View {
                 Text("Sources")
             } footer: {
                 Text("Rescan after installing new command-line tools. Same as `tgr rescan`.")
+            }
+            Section {
+                Toggle("Check for new releases automatically", isOn: $model.settings.checkForUpdates)
+                LabeledContent("Version \(GuruVersion.current)") {
+                    Button("Check Now") { model.onCheckUpdates?() }
+                }
+            } header: {
+                Text("Updates")
+            } footer: {
+                Text("A new release is fetched into the source checkout, rebuilt and reinstalled. Same as `tgr update`.")
             }
         }
         .formStyle(.grouped)
