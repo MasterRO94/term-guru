@@ -19,7 +19,22 @@ public enum Installer {
 
     static func activeLines(in file: URL) -> [String] {
         guard let text = try? String(contentsOf: file, encoding: .utf8) else { return [] }
-        return text.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#") }
+        return activeLines(of: text)
+    }
+
+    static func activeLines(of text: String) -> [String] {
+        text.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#") }
+    }
+
+    public static var cliLink: URL { home.appendingPathComponent(".local/bin/tgr") }
+
+    /// True when the rc file has the current line, which puts ~/.local/bin on PATH for new shells.
+    public static func addsCLIToPath(_ shell: String) -> Bool {
+        addsCLIToPath(text: (try? String(contentsOf: rcFile(for: shell), encoding: .utf8)) ?? "", shell: shell)
+    }
+
+    static func addsCLIToPath(text: String, shell: String) -> Bool {
+        activeLines(of: text).contains { $0.trimmingCharacters(in: .whitespaces) == initLine(for: shell) }
     }
 
     public enum IntegrationChange: Sendable { case added, updated, unchanged }

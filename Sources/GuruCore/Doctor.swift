@@ -95,9 +95,15 @@ public enum Doctor {
             add(.warning, "Warp is not supported", "Warp replaces the shell's line editor, so no shell hook can see what you type.")
         }
 
-        Shell.run(["sh", "-c", "command -v tgr"]).status == 0
-            ? add(.ok, "tgr on PATH")
-            : add(.warning, "tgr not on PATH", "", fix: "Add ~/.local/bin to PATH")
+        // The app runs with launchd's bare PATH, so its own PATH says nothing about the user's shells.
+        let cliLinked = fm.isExecutableFile(atPath: Installer.cliLink.path)
+        if Shell.run(["sh", "-c", "command -v tgr"]).status == 0 {
+            add(.ok, "tgr on PATH")
+        } else if cliLinked, ["zsh", "bash"].contains(where: Installer.addsCLIToPath) {
+            add(.ok, "tgr on PATH", "new shells get ~/.local/bin from the TermGuru line")
+        } else {
+            add(.warning, "tgr not on PATH", "", fix: cliLinked ? "~/.local/bin/tgr install" : "Scripts/install.sh")
+        }
 
         Installer.launchesAtLogin
             ? add(.ok, "Starts at login")

@@ -37,6 +37,14 @@ import Testing
         #expect(result.text.hasPrefix(text))
     }
 
+    @Test func onlyCurrentActiveLineAddsCLIToPath() {
+        let current = Installer.initLine(for: "zsh")
+        #expect(Installer.addsCLIToPath(text: "x\n  \(current)\n", shell: "zsh"))
+        #expect(!Installer.addsCLIToPath(text: "\(Self.legacyLine)\n", shell: "zsh"))
+        #expect(!Installer.addsCLIToPath(text: "# \(current)\n", shell: "zsh"))
+        #expect(!Installer.addsCLIToPath(text: "\(current)\n", shell: "bash"))
+    }
+
     @Test func initLinePutsLocalBinOnPath() throws {
         for shell in ["zsh", "bash"] {
             let output = try run(shell, Installer.initLine(for: shell).replacingOccurrences(of: "&& eval", with: "&& echo") + "\necho \"$PATH\"")

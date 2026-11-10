@@ -4,6 +4,10 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Fixed
+
+- The app's Diagnostics tab no longer reports "tgr not on PATH" when new shells get `~/.local/bin` from the TermGuru line; the app itself runs with macOS's bare `PATH`.
+
 ## [0.2.2] - 2026-11-10
 
 ### Fixed
