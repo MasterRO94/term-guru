@@ -28,4 +28,6 @@ Scripts/release.sh --dry-run
 Scripts/release.sh
 ```
 
+`make release` runs the tests first and then the same script.
+
 `Scripts/release.sh` refuses to run with uncommitted changes, an existing tag or an empty changelog section. It creates the annotated tag `vX.Y.Z`, pushes the current branch and the tag to `origin`, and creates the GitHub release with that version's changelog section as its notes. It needs the [GitHub CLI](https://cli.github.com) signed in (`gh auth status`).

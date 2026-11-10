@@ -5,10 +5,12 @@ Fig-style autocomplete popup for the terminal on macOS. Works in JetBrains IDE t
 TermGuru is distributed as source only: you build it on the machine that runs it.
 
 ```bash
-git clone https://github.com/MasterRO94/term-guru.git
+git clone git@github.com:MasterRO94/term-guru.git
 cd term-guru
 Scripts/install.sh
 ```
+
+`make` lists shortcuts for building, installing, restarting, testing and releasing.
 
 ## Documentation
 
