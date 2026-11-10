@@ -9,6 +9,13 @@ final class SettingsModel: ObservableObject {
     @Published var checks: [DoctorCheck] = []
     @Published var checking = false
 
+    // Aliases pane form state. Kept here, not in `@State`: from the macOS 27 SDK `@State` is a macro
+    // whose plugin ships only with Xcode, so the Command Line Tools toolchain cannot expand it.
+    @Published var aliasName = ""
+    @Published var aliasCommand = ""
+    @Published var aliasError: String?
+    @Published var aliasSelection: String?
+
     var onChange: ((GuruSettings) -> Void)?
     var onPause: ((Bool) -> Void)?
     var onRescan: (() -> Void)?
@@ -108,14 +115,10 @@ private struct GeneralPane: View {
 
 private struct AliasesPane: View {
     @ObservedObject var model: SettingsModel
-    @State private var name = ""
-    @State private var command = ""
-    @State private var error: String?
-    @State private var selection: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Table(model.aliases, selection: $selection) {
+            Table(model.aliases, selection: $model.aliasSelection) {
                 TableColumn("Alias") { Text($0.name).font(.system(.body, design: .monospaced)) }
                     .width(min: 80, ideal: 110, max: 160)
                 TableColumn("Command") { Text($0.value).font(.system(.body, design: .monospaced)).lineLimit(1) }
@@ -126,19 +129,19 @@ private struct AliasesPane: View {
                 }
             }
             HStack {
-                TextField("Name", text: $name).frame(width: 110)
-                TextField("Command", text: $command).onSubmit(add)
+                TextField("Name", text: $model.aliasName).frame(width: 110)
+                TextField("Command", text: $model.aliasCommand).onSubmit(add)
                 Button("Add", action: add)
-                    .disabled(name.isEmpty || command.isEmpty)
+                    .disabled(model.aliasName.isEmpty || model.aliasCommand.isEmpty)
                 Button("Remove", role: .destructive) {
-                    if let selection { model.removeAlias(selection) }
-                    selection = nil
+                    if let selection = model.aliasSelection { model.removeAlias(selection) }
+                    model.aliasSelection = nil
                 }
-                .disabled(selection == nil)
+                .disabled(model.aliasSelection == nil)
             }
             .textFieldStyle(.roundedBorder)
             .font(.system(.body, design: .monospaced))
-            if let error {
+            if let error = model.aliasError {
                 Text(error).font(.callout).foregroundStyle(.red)
             } else {
                 Text("Aliases load in open shells at their next prompt.")
@@ -150,8 +153,8 @@ private struct AliasesPane: View {
     }
 
     private func add() {
-        error = model.addAlias(name: name.trimmingCharacters(in: .whitespaces), value: command)
-        if error == nil { name = ""; command = "" }
+        model.aliasError = model.addAlias(name: model.aliasName.trimmingCharacters(in: .whitespaces), value: model.aliasCommand)
+        if model.aliasError == nil { model.aliasName = ""; model.aliasCommand = "" }
     }
 }
 
