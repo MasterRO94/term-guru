@@ -87,7 +87,7 @@ While the popup shows:
 | --- | --- |
 | ↑ / ↓ | Select a suggestion |
 | Tab | Insert the highlighted suggestion |
-| Return | Without a selection: run the line as typed. After selecting with ↑/↓: insert the suggestion, or run it, depending on the setting |
+| Return | Insert the highlighted suggestion, or run it, depending on the setting. Runs the line as typed when the current word is empty or already matches the top suggestion and you have not moved with ↑/↓ |
 | ⌘Return | Insert the highlighted suggestion and run it |
 | Esc | Hide the popup until you move to another word |
 

@@ -4,6 +4,20 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-10
+
+### Fixed
+
+- Build failed on machines with only the Command Line Tools (no Xcode) on the macOS 27 SDK.
+
+### Added
+
+- `Makefile` with shortcuts for building, installing, restarting, testing and releasing.
+
+### Changed
+
+- Return inserts the highlighted suggestion without pressing ↑/↓ first. It still runs the line as typed when the current word is empty or already complete.
+
 ## [0.1.0] - 2026-11-10
 
 ### Added
@@ -16,5 +30,6 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 - `tgr` CLI: `doctor`, `rescan`, `alias`, `install`, `uninstall`, `settings`, `status`, `start`, `stop`, `restart`, `logs`, `specs`, `complete`.
 - Settings window (General, Aliases, Diagnostics) and menu bar item.
 
-[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/MasterRO94/term-guru/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/MasterRO94/term-guru/releases/tag/v0.1.0

@@ -275,7 +275,7 @@ final class Coordinator {
             session.connection.send(insertion(item))
         case "enter" where KeyTap.commandHeld:
             session.connection.send(insertion(item, execute: true))
-        case "enter" where navigated:
+        case "enter" where navigated || completes(item, session: session):
             session.connection.send(insertion(item, execute: enterAction == .execute))
         case "esc":
             session.dismissedWord = Tokenizer.parse(String(session.buffer.prefix(session.cursor))).tokens.count
@@ -285,6 +285,13 @@ final class Coordinator {
             hide()
             session.connection.send("P")
         }
+    }
+
+    // Return must still run a finished line: an untouched top row only wins while it adds to the typed word.
+    private func completes(_ item: Suggestion, session: ShellSession) -> Bool {
+        guard item.replace > 0 else { return false }
+        let typed = String(session.buffer.prefix(session.cursor).suffix(item.replace))
+        return typed != item.insert.trimmingCharacters(in: .whitespaces)
     }
 
     private func pick(_ index: Int) {
