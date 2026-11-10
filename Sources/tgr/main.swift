@@ -144,8 +144,12 @@ struct Install: ParsableCommand {
     func run() {
         for shell in ["zsh", "bash"] {
             do {
-                let added = try Installer.addIntegration(shell)
-                print("\(Style.green("✓")) \(shell): \(added ? "added to" : "already in") ~/\(Installer.rcFile(for: shell).lastPathComponent)")
+                let verb = switch try Installer.addIntegration(shell) {
+                case .added: "added to"
+                case .updated: "updated in"
+                case .unchanged: "already in"
+                }
+                print("\(Style.green("✓")) \(shell): \(verb) ~/\(Installer.rcFile(for: shell).lastPathComponent)")
             } catch { print("\(Style.red("✗")) \(shell): \(error.localizedDescription)") }
         }
         if replaceOthers {

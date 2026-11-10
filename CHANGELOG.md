@@ -4,6 +4,10 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Fixed
+
+- No autocomplete and no `tgr` command when `~/.local/bin` is not on `PATH`, as on a stock Mac: the shell line now adds it. Run `Scripts/install.sh` or `tgr install` to update the line in `~/.zshrc` and `~/.bashrc`.
+
 ## [0.2.1] - 2026-11-10
 
 ### Added

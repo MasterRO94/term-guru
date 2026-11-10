@@ -12,3 +12,7 @@ rm -rf "$DEST"
 cp -R build/TermGuru.app "$DEST"
 ln -sf "$DEST/Contents/MacOS/tgr" "$HOME/.local/bin/tgr"
 "$HOME/.local/bin/tgr" install "$@"
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) echo "! ~/.local/bin was not on PATH; new zsh/bash shells get it from the TermGuru line in ~/.zshrc and ~/.bashrc" ;;
+esac

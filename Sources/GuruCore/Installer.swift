@@ -8,8 +8,9 @@ public enum Installer {
         home.appendingPathComponent(shell == "bash" ? ".bashrc" : ".zshrc")
     }
 
+    // A stock macOS PATH lacks ~/.local/bin, where install.sh links tgr; without it the hook would skip silently.
     public static func initLine(for shell: String) -> String {
-        #"command -v tgr >/dev/null 2>&1 && eval "$(tgr init \#(shell))" \#(marker)"#
+        #"case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac; command -v tgr >/dev/null 2>&1 && eval "$(tgr init \#(shell))" \#(marker)"#
     }
 
     public static func hasIntegration(_ shell: String) -> Bool {
@@ -21,16 +22,32 @@ public enum Installer {
         return text.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#") }
     }
 
-    /// Appends the init line. Returns false when it was already there.
+    public enum IntegrationChange: Sendable { case added, updated, unchanged }
+
+    /// Rewrites an older TermGuru init line in place, or appends one when none is active.
+    static func integrated(_ text: String, shell: String) -> (text: String, change: IntegrationChange) {
+        let line = initLine(for: shell)
+        var lines = text.components(separatedBy: "\n")
+        var change = IntegrationChange.added
+        for index in lines.indices {
+            let trimmed = lines[index].trimmingCharacters(in: .whitespaces)
+            guard !trimmed.hasPrefix("#"), trimmed.contains("tgr init \(shell)") else { continue }
+            guard trimmed.hasSuffix(marker), trimmed != line else { return (text, .unchanged) }
+            lines[index] = line
+            change = .updated
+        }
+        if change == .updated { return (lines.joined(separator: "\n"), .updated) }
+        var appended = text
+        if !appended.isEmpty, !appended.hasSuffix("\n") { appended += "\n" }
+        return (appended + "\n" + line + "\n", .added)
+    }
+
     @discardableResult
-    public static func addIntegration(_ shell: String) throws -> Bool {
-        guard !hasIntegration(shell) else { return false }
+    public static func addIntegration(_ shell: String) throws -> IntegrationChange {
         let file = rcFile(for: shell)
-        var text = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
-        if !text.isEmpty, !text.hasSuffix("\n") { text += "\n" }
-        text += "\n" + initLine(for: shell) + "\n"
-        try text.write(to: file, atomically: true, encoding: .utf8)
-        return true
+        let result = integrated((try? String(contentsOf: file, encoding: .utf8)) ?? "", shell: shell)
+        if result.change != .unchanged { try result.text.write(to: file, atomically: true, encoding: .utf8) }
+        return result.change
     }
 
     @discardableResult

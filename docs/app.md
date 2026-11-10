@@ -28,8 +28,8 @@ To build a specific release, check out its tag first, for example `git checkout 
 
 1. Downloads the Fig completion specs into `Resources/specs` if they are missing (`Scripts/fetch-specs.sh`).
 2. Builds `build/TermGuru.app` (`Scripts/build.sh`), generating the `tgr` spec from the CLI itself, and copies it to `~/Applications/TermGuru.app`.
-3. Links the CLI to `~/.local/bin/tgr`. Make sure `~/.local/bin` is on your `PATH`.
-4. Runs `tgr install`, which adds one line to `~/.zshrc` and `~/.bashrc`, installs the caret plugin into every JetBrains IDE config folder, adds a login item and starts the app.
+3. Links the CLI to `~/.local/bin/tgr`.
+4. Runs `tgr install`, which adds one line to `~/.zshrc` and `~/.bashrc` (it puts `~/.local/bin` on `PATH` when missing, then loads the hook; an older TermGuru line is replaced in place), installs the caret plugin into every JetBrains IDE config folder, adds a login item and starts the app.
 
 Pass `--replace-others` to also comment out Figxit and Kiro CLI hooks in your shell files:
 
