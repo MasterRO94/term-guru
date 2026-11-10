@@ -4,6 +4,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-11-11
+
 ### Fixed
 
 - The word after a redirection (`>`, `>>`, `>|`, `<`, `<>`, `&>`, `2>` and the like) lists files instead of the command's options, with or without a space before it. Heredocs, here-strings and fd copies such as `2>&1` get no suggestions, and the redirection no longer hides the command's own completions: `make 2>&1 -` lists `make` options again.
@@ -79,7 +81,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 - `tgr` CLI: `doctor`, `rescan`, `alias`, `install`, `uninstall`, `settings`, `status`, `start`, `stop`, `restart`, `logs`, `specs`, `complete`.
 - Settings window (General, Aliases, Diagnostics) and menu bar item.
 
-[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/MasterRO94/term-guru/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/MasterRO94/term-guru/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/MasterRO94/term-guru/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/MasterRO94/term-guru/compare/v0.2.0...v0.2.1
