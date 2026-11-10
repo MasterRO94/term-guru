@@ -4,6 +4,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-10
+
 ### Added
 
 - Your own completion specs: drop `<command>.js` into `~/.config/term-guru/specs` and run `tgr rescan`. They override the bundled ones.
@@ -59,7 +61,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 - `tgr` CLI: `doctor`, `rescan`, `alias`, `install`, `uninstall`, `settings`, `status`, `start`, `stop`, `restart`, `logs`, `specs`, `complete`.
 - Settings window (General, Aliases, Diagnostics) and menu bar item.
 
-[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/MasterRO94/term-guru/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/MasterRO94/term-guru/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/MasterRO94/term-guru/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/MasterRO94/term-guru/compare/v0.1.0...v0.1.1
