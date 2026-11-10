@@ -303,7 +303,7 @@ final class Coordinator {
 
     private func installStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "chevron.left.forwardslash.chevron.right", accessibilityDescription: "TermGuru")
+        item.button?.image = MenuBarIcon.image()
         let menu = NSMenu()
         let pause = NSMenuItem(title: "Pause Suggestions", action: #selector(togglePause(_:)), keyEquivalent: "")
         pause.target = self
