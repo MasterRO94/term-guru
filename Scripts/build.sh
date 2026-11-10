@@ -15,6 +15,7 @@ cp "$BIN/GuruApp" "$APP/MacOS/TermGuru"
 cp "$BIN/tgr" "$APP/MacOS/tgr"
 cp Resources/app/Info.plist "$APP/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Info.plist"
+cp Resources/app/AppIcon.icns "$APP/Resources/AppIcon.icns"
 cp -R Resources/shell "$APP/Resources/shell"
 cp -R Resources/specs "$APP/Resources/specs"
 

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help build debug plugin specs install install-replace update uninstall clean \
+.PHONY: help build debug plugin specs icon install install-replace update uninstall clean \
         start stop restart status doctor logs settings rescan reset-accessibility \
         test test-unit test-integration version release-dry-run release
 
@@ -23,6 +23,11 @@ plugin: ## Build the JetBrains plugin (IDE=/path/to/IDE.app)
 
 specs: ## Re-download the Fig completion specs
 	Scripts/fetch-specs.sh
+
+icon: ## Regenerate Resources/app/AppIcon.icns from Scripts/make-icon.swift
+	rm -rf build/AppIcon.iconset
+	swift Scripts/make-icon.swift build/AppIcon.iconset
+	iconutil -c icns build/AppIcon.iconset -o Resources/app/AppIcon.icns
 
 clean: ## Remove build output
 	rm -rf .build build
