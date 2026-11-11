@@ -18,9 +18,11 @@ final class PopupController {
     private let headless = ProcessInfo.processInfo.environment["GURU_HEADLESS"] != nil
     private(set) var isVisible = false
 
+    // Room for either layout: the card beside the list or below it.
     private static let size = CGSize(
         width: PopupMetrics.listWidth + PopupMetrics.spacing + PopupMetrics.detailWidth + 40,
-        height: PopupMetrics.listHeight(rows: PopupMetrics.maxRowsLimit, maxRows: PopupMetrics.maxRowsLimit) + 60
+        height: PopupMetrics.listHeight(rows: PopupMetrics.maxRowsLimit, maxRows: PopupMetrics.maxRowsLimit)
+            + PopupMetrics.spacing + PopupMetrics.detailMaxHeight + 60
     )
 
     init() {
@@ -37,6 +39,7 @@ final class PopupController {
         panel.isReleasedWhenClosed = false
         panel.animationBehavior = .none
 
+        model.onContentHeight = { [weak self] in self?.layout() }
         let root = PopupView(model: model) { [weak self] index in self?.onPick?(index) }
             .padding(20)
         let host = NSHostingView(rootView: root)
@@ -67,6 +70,8 @@ final class PopupController {
         layout()
     }
 
+    func relayout() { layout() }
+
     /// Panel frame in top-left screen coordinates, as `screencapture -R` expects.
     var captureRect: CGRect { CaretLocator.flip(panel.frame) }
 
@@ -76,8 +81,12 @@ final class PopupController {
         guard let visible = screen?.visibleFrame else { return }
 
         let inset: CGFloat = 20
-        let contentHeight = PopupMetrics.listHeight(rows: model.items.count, maxRows: model.maxRows)
-        let contentWidth = PopupMetrics.listWidth + PopupMetrics.spacing + PopupMetrics.detailWidth
+        // The measured height covers the card too, which can be taller than a short list or sit below it.
+        let listHeight = PopupMetrics.listHeight(rows: model.items.count, maxRows: model.maxRows)
+        let contentHeight = max(listHeight, model.contentHeight)
+        let contentWidth = model.detailsPosition == .below
+            ? PopupMetrics.listWidth
+            : PopupMetrics.listWidth + PopupMetrics.spacing + PopupMetrics.detailWidth
         var x = (anchorX ?? caret.minX) - 10
         x = min(max(x, visible.minX + 4), visible.maxX - contentWidth - 4)
 

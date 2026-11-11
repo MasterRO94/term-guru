@@ -16,11 +16,17 @@ public struct EngineRequest: Sendable {
 public final class Engine {
     public var limit = 60
     public var useHistory = true
+    /// Overridden by tests that step through cache lifetimes.
+    var now: () -> Date = Date.init
 
     private let specs: SpecRuntime
     private let history: HistoryStore
     private let executables: ExecutableIndex
     private var generatorCache: [String: (items: [SpecSuggestion], at: Date)] = [:]
+    /// Stale-while-revalidate entries served this request, re-run by `refreshStale()`.
+    private var staleRefreshes: [String: () -> [SpecSuggestion]] = [:]
+    /// Per generator and argument position: the word at the last run, its results, and when they were last served.
+    private var triggerState: [String: (token: String, items: [SpecSuggestion], used: Date)] = [:]
 
     private var generatedSpecs: [String: (spec: SpecCommand, at: Date)] = [:]
 
@@ -36,6 +42,8 @@ public final class Engine {
         specs.flushCache()
         executables.invalidate()
         generatorCache.removeAll()
+        staleRefreshes.removeAll()
+        triggerState.removeAll()
         generatedSpecs.removeAll()
         history.reload(force: true)
     }
@@ -69,6 +77,13 @@ public final class Engine {
         merged.sort { $0.score > $1.score }
         var seen = Set<String>()
         return Array(merged.filter { seen.insert($0.insert).inserted }.prefix(limit))
+    }
+
+    /// Re-runs the stale-while-revalidate generators the last requests served from cache; call after replying.
+    public func refreshStale() {
+        let pending = staleRefreshes
+        staleRefreshes.removeAll()
+        for (key, produce) in pending { generatorCache[key] = (produce(), now()) }
     }
 
     // MARK: First word
@@ -105,6 +120,8 @@ public final class Engine {
 
     private struct Walk {
         var command: SpecCommand
+        /// Command that holds `command` as a subcommand; Fig's `help` template lists its siblings.
+        var parent: SpecCommand?
         var persistent: [SpecOption] = []
         var argIndex = 0
         var positionals = 0
@@ -157,6 +174,7 @@ public final class Engine {
             }
             if walk.positionals == 0, let sub = walk.command.subcommands.first(where: { $0.names.contains(token) }) {
                 walk.persistent += walk.command.options.filter(\.isPersistent)
+                walk.parent = walk.command
                 walk.command = resolve(sub, tokens: tokens, env: env)
                 walk.argIndex = 0
                 walk.used = []
@@ -187,13 +205,26 @@ public final class Engine {
                     term = custom
                 }
                 let scope = String(partial.dropLast(term.count))
-                let items = run(generator, tokens: tokens, env: env, scope: scope)
+                var items = run(generator, tokens: tokens, env: env, scope: scope)
+                // A generator that lists only folders is a folder list, like Fig's own `cd` spec.
+                if !items.isEmpty, items.allSatisfy({ $0.type == "folder" }) {
+                    let parents = FileSuggestions.parents(partial: partial, replace: replace, cwd: request.cwd)
+                    if !parents.isEmpty {
+                        items.removeAll { $0.names[0] == "../" }
+                        groups.append((parents, partial))
+                    }
+                }
                 groups.append((convert(items, kind: .argument, replace: max(0, replace - scope.count)), term))
             }
-            let templates = Set(arg.template + arg.generators.flatMap(\.template))
-            if templates.contains("filepaths") || templates.contains("folders") {
-                groups.append(FileSuggestions.list(partial: partial, rawPartial: rawPartial, cwd: request.cwd,
-                                                   foldersOnly: !templates.contains("filepaths")))
+            let unfiltered = arg.generators.filter { $0.filterTemplateSuggestions == nil }
+            let helpRoot = walk.parent ?? walk.command
+            groups += templateGroups(Set(arg.template + unfiltered.flatMap(\.template)), root: helpRoot, command: commandName,
+                                     partial: partial, rawPartial: rawPartial, replace: replace, cwd: request.cwd)
+            for generator in arg.generators where !generator.template.isEmpty {
+                guard let filter = generator.filterTemplateSuggestions else { continue }
+                groups += templateGroups(Set(generator.template), root: helpRoot, command: commandName,
+                                         partial: partial, rawPartial: rawPartial, replace: replace, cwd: request.cwd)
+                    .map { (filterTemplate(filter, $0.items), $0.query) }
             }
         }
 
@@ -220,7 +251,8 @@ public final class Engine {
             var items = walk.command.subcommands.filter { !$0.hidden }.map { sub -> Suggestion in
                 let name = sub.names.first { $0.hasPrefix(partial) } ?? sub.name
                 return make(name: name, display: sub.names.joined(separator: ", "), insertValue: sub.insertValue,
-                            description: sub.description, kind: .subcommand, priority: sub.priority ?? 55, replace: replace)
+                            description: sub.description, kind: .subcommand, priority: sub.priority ?? 55, replace: replace,
+                            icon: sub.icon)
             }
             items += convert(walk.command.additionalSuggestions, kind: .subcommand, replace: replace)
             groups.append((items, partial))
@@ -234,11 +266,65 @@ public final class Engine {
         return groups
     }
 
+    private func templateGroups(
+        _ templates: Set<String>, root: SpecCommand, command: String,
+        partial: String, rawPartial: String, replace: Int, cwd: String
+    ) -> [Group] {
+        var groups: [Group] = []
+        if templates.contains("filepaths") || templates.contains("folders") {
+            groups.append(FileSuggestions.list(partial: partial, rawPartial: rawPartial, cwd: cwd,
+                                               foldersOnly: !templates.contains("filepaths")))
+        }
+        if templates.contains("help") {
+            let items = root.subcommands.filter { !$0.hidden && !$0.name.isEmpty }.map { sub in
+                make(name: sub.name, display: sub.name, insertValue: nil, description: sub.description,
+                     kind: .subcommand, priority: 50, replace: replace, icon: sub.icon)
+            }
+            groups.append((items, partial))
+        }
+        if templates.contains("history") {
+            let items = history.arguments(command: command, prefix: partial, limit: 10).enumerated().map { index, word in
+                Suggestion(name: word, insert: Tokenizer.quote(word) + " ", description: "History", kind: .history,
+                           priority: 40 - Double(index) * 0.1, replace: replace)
+            }
+            groups.append((items, partial))
+        }
+        return groups
+    }
+
+    private func filterTemplate(_ fn: Int, _ items: [Suggestion]) -> [Suggestion] {
+        func figName(_ item: Suggestion) -> String {
+            item.kind == .folder && !item.name.hasSuffix("/") ? item.name + "/" : item.name
+        }
+        func figType(_ kind: SuggestionKind) -> String {
+            switch kind {
+            case .folder: "folder"
+            case .file: "file"
+            case .subcommand: "subcommand"
+            default: "special"
+            }
+        }
+        let objects: [[String: Any]] = items.map {
+            ["name": figName($0), "type": figType($0.kind), "description": $0.description, "priority": $0.priority]
+        }
+        guard let kept = specs.filterTemplate(fn, suggestions: objects) else { return items }
+        let byName = Dictionary(items.map { (figName($0), $0) }, uniquingKeysWith: { first, _ in first })
+        return kept.compactMap { object in
+            guard let name = object["name"] as? String, var item = byName[name] else { return nil }
+            // Specs write `priority: matches && 76`, which is `false` for the rest.
+            if let priority = object["priority"] as? NSNumber, CFGetTypeID(priority) != CFBooleanGetTypeID() {
+                item.priority = priority.doubleValue
+            }
+            if let description = object["description"] as? String { item.description = description }
+            return item
+        }
+    }
+
     private func consumeOption(_ token: String, in walk: inout Walk) {
         let eq = token.firstIndex(of: "=")
         let flag = eq.map { String(token[..<$0]) } ?? token
         if let option = walk.option(named: flag) {
-            walk.used.insert(option.names[0])
+            walk.used.formUnion(option.names)
             if eq == nil, let first = option.args.first, !first.isOptional { walk.pending = (option, 0) }
             return
         }
@@ -247,7 +333,7 @@ public final class Engine {
         let flags = token.dropFirst().map { "-\($0)" }
         for (offset, short) in flags.enumerated() {
             guard let option = walk.option(named: short) else { continue }
-            walk.used.insert(option.names[0])
+            walk.used.formUnion(option.names)
             if offset == flags.count - 1, let first = option.args.first, !first.isOptional { walk.pending = (option, 0) }
         }
     }
@@ -257,24 +343,27 @@ public final class Engine {
         if let path = command.loadSpec, let loaded = specs.spec(named: path) { resolved = loaded }
         guard let fn = resolved.generateSpec else { return resolved }
         let key = "g\(fn)|\(env.cwd)"
-        if let hit = generatedSpecs[key], Date().timeIntervalSince(hit.at) < 30 { return hit.spec }
+        if let hit = generatedSpecs[key], now().timeIntervalSince(hit.at) < 30 { return hit.spec }
         var merged = resolved
         if let generated = specs.generateSpec(fn, tokens: tokens, context: env) {
             merged = SpecCommand(base: resolved, generated: generated)
         }
         if generatedSpecs.count > 50 { generatedSpecs.removeAll() }
-        generatedSpecs[key] = (merged, Date())
+        generatedSpecs[key] = (merged, now())
         return merged
     }
 
     private func optionCandidates(_ walk: Walk, partial: String, replace: Int, priority: Double) -> [Suggestion] {
         walk.options.compactMap { option in
             guard !option.hidden, !option.names.isEmpty else { return nil }
-            if walk.used.contains(option.names[0]), !option.isRepeatable { return nil }
+            if !option.isRepeatable, option.names.contains(where: walk.used.contains) { return nil }
+            if option.exclusiveOn.contains(where: walk.used.contains) { return nil }
+            // Spec authors list aliases here (["-l", "--long"], tar's ["T", "-T", "--files-from"]), so any one will do.
+            if !option.dependsOn.isEmpty, !option.dependsOn.contains(where: walk.used.contains) { return nil }
             let name = option.names.first { !partial.isEmpty && $0.hasPrefix(partial) } ?? option.names[0]
             var suggestion = make(name: name, display: option.names.joined(separator: ", "), insertValue: option.insertValue,
                                   description: option.description, kind: .option,
-                                  priority: option.priority ?? priority, replace: replace)
+                                  priority: option.priority ?? priority, replace: replace, icon: option.icon)
             if option.insertValue == nil, let separator = option.separator { suggestion.insert = name + separator }
             return suggestion
         }
@@ -282,10 +371,45 @@ public final class Engine {
 
     private func run(_ generator: SpecGenerator, tokens: [String], env: GeneratorContext, scope: String) -> [SpecSuggestion] {
         specs.setContext(env)
+        let position = "\(env.cwd)|\(tokens.dropLast().joined(separator: " "))"
+        let token = tokens.last ?? ""
+        let stateKey = "\(generator.identity)|\(position)"
+        var fired = false
+        if let trigger = generator.trigger, let state = triggerState[stateKey],
+           now().timeIntervalSince(state.used) < 10 {
+            guard fires(trigger, new: token, old: state.token) else {
+                triggerState[stateKey]?.used = now()
+                return state.items
+            }
+            fired = true
+        }
+        let items = produce(generator, tokens: tokens, env: env, scope: scope, position: position, force: fired)
+        if generator.trigger != nil {
+            if triggerState.count > 200 { triggerState.removeAll() }
+            triggerState[stateKey] = (token, items, now())
+        }
+        return items
+    }
+
+    private func fires(_ trigger: GeneratorTrigger, new: String, old: String) -> Bool {
+        switch trigger {
+        case let .string(mark): new.components(separatedBy: mark).count != old.components(separatedBy: mark).count
+        case let .function(fn): specs.trigger(fn, newToken: new, oldToken: old) ?? false
+        case .change: new != old
+        case let .threshold(length): abs(new.count - old.count) > length
+        }
+    }
+
+    /// `force` skips a cached custom result: custom generators see the word, so a fired trigger needs a fresh run.
+    private func produce(
+        _ generator: SpecGenerator, tokens: [String], env: GeneratorContext, scope: String, position: String, force: Bool
+    ) -> [SpecSuggestion] {
+        // The cwd stays in every key even without `cacheByDirectory`: a wrong-directory branch list costs more than a re-run.
         if let custom = generator.custom {
             // Custom generators see the partial word, so cache per word start rather than per keystroke.
-            let key = "c\(custom)|\(env.cwd)|\(tokens.dropLast().joined(separator: " "))|\(scope)"
-            return cached(key) { specs.custom(custom, tokens: tokens, context: env) }
+            return cached("c\(custom)|\(position)|\(scope)", generator.cache, force: force) { [specs] in
+                specs.custom(custom, tokens: tokens, context: env)
+            }
         }
         guard var script = generator.script else { return [] }
         if case let .function(fn) = script {
@@ -299,7 +423,7 @@ public final class Engine {
         case .function: return []
         }
         let key = "s|\(env.cwd)|\(argv.joined(separator: "\u{0}"))|\(generator.postProcess ?? -1)"
-        return cached(key) {
+        return cached(key, generator.cache) { [specs] in
             let result = Shell.run(argv, cwd: env.cwd, environment: env.environment, timeout: 2)
             if let postProcess = generator.postProcess {
                 return specs.postProcess(postProcess, output: result.stdout, tokens: tokens)
@@ -311,11 +435,19 @@ public final class Engine {
         }
     }
 
-    private func cached(_ key: String, _ produce: () -> [SpecSuggestion]) -> [SpecSuggestion] {
-        if let hit = generatorCache[key], Date().timeIntervalSince(hit.at) < 5 { return hit.items }
+    private func cached(
+        _ key: String, _ policy: GeneratorCachePolicy, force: Bool = false, _ produce: @escaping () -> [SpecSuggestion]
+    ) -> [SpecSuggestion] {
+        if !force, let hit = generatorCache[key] {
+            if now().timeIntervalSince(hit.at) < policy.ttl { return hit.items }
+            if policy.staleWhileRevalidate {
+                staleRefreshes[key] = produce
+                return hit.items
+            }
+        }
         if generatorCache.count > 200 { generatorCache.removeAll() }
         let items = produce()
-        generatorCache[key] = (items, Date())
+        generatorCache[key] = (items, now())
         return items
     }
 
@@ -330,22 +462,23 @@ public final class Engine {
         raw.compactMap { item in
             guard !item.hidden else { return nil }
             var resolved = kind
+            var icon = item.icon
             switch item.type {
-            case "folder": resolved = .folder
-            case "file": resolved = .file
+            case "folder": resolved = .folder; icon = icon ?? .fileType("/")
+            case "file": resolved = .file; icon = icon ?? SuggestionIcon.fileType(name: item.names[0])
             case "subcommand": resolved = .subcommand
             case "option": resolved = .option
             default: break
             }
             return make(name: item.names[0], display: item.displayName ?? item.names.joined(separator: ", "),
                         insertValue: item.insertValue, description: item.description, kind: resolved,
-                        priority: item.priority ?? 50, replace: replace)
+                        priority: item.priority ?? 50, replace: replace, icon: icon)
         }
     }
 
     private func make(
         name: String, display: String, insertValue: String?, description: String,
-        kind: SuggestionKind, priority: Double, replace: Int
+        kind: SuggestionKind, priority: Double, replace: Int, icon: SuggestionIcon? = nil
     ) -> Suggestion {
         let isPath = kind == .folder || name.hasSuffix("/")
         var insert = insertValue ?? (kind == .argument || isPath ? Tokenizer.quote(name) : name) + (isPath ? "" : " ")
@@ -355,6 +488,6 @@ public final class Engine {
             insert.removeSubrange(marker)
         }
         return Suggestion(name: name, display: display, insert: insert, description: description, kind: kind,
-                          priority: priority, replace: replace, cursorBack: back)
+                          priority: priority, replace: replace, cursorBack: back, icon: icon)
     }
 }

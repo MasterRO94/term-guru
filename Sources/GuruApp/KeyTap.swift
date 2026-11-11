@@ -2,8 +2,10 @@ import AppKit
 
 /// Turns ⌘Return into a plain Return while the popup shows, because terminals keep ⌘Return for themselves.
 /// The shell then reports an ordinary Enter and the coordinator sees ⌘ still held.
+/// ⌘I is swallowed while the popup shows, since Terminal and iTerm would open their inspectors.
 final class KeyTap {
     var isArmed: () -> Bool = { false }
+    var onToggleDetails: (() -> Void)?
     private var port: CFMachPort?
 
     static var commandHeld: Bool {
@@ -36,6 +38,10 @@ final class KeyTap {
         let modifiers = event.flags.intersection([.maskCommand, .maskControl, .maskAlternate, .maskShift])
         if (keyCode == 36 || keyCode == 76), modifiers == .maskCommand, isArmed() {
             event.flags.remove(.maskCommand)
+        }
+        if keyCode == 34, modifiers == .maskCommand, isArmed() {
+            if type == .keyDown, event.getIntegerValueField(.keyboardEventAutorepeat) == 0 { onToggleDetails?() }
+            return nil
         }
         return Unmanaged.passUnretained(event)
     }

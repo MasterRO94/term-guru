@@ -68,4 +68,18 @@ public final class HistoryStore {
         }
         return out
     }
+
+    /// Words typed after `command` in earlier lines, newest first; Fig's `history` template.
+    public func arguments(command: String, prefix: String, limit: Int) -> [String] {
+        var seen = Set<String>()
+        var out: [String] = []
+        for line in lines where line.hasPrefix(command + " ") {
+            for word in Tokenizer.parse(line).tokens.dropFirst() where !word.hasPrefix("-") && word.hasPrefix(prefix) && word != prefix {
+                guard seen.insert(word).inserted else { continue }
+                out.append(word)
+                if out.count == limit { return out }
+            }
+        }
+        return out
+    }
 }

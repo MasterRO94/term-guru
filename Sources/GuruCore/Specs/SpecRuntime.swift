@@ -121,6 +121,19 @@ public final class SpecRuntime {
         return (try? JSONSerialization.jsonObject(with: Data(json.utf8), options: .fragmentsAllowed)) as? String
     }
 
+    public func trigger(_ fn: Int, newToken: String, oldToken: String) -> Bool? {
+        guard let json = call(fn, [newToken, oldToken]) else { return nil }
+        return (try? JSONSerialization.jsonObject(with: Data(json.utf8), options: .fragmentsAllowed)) as? Bool
+    }
+
+    /// Fig's `filterTemplateSuggestions`: gets `{name, type, …}` objects, returns the ones to keep.
+    public func filterTemplate(_ fn: Int, suggestions: [[String: Any]]) -> [[String: Any]]? {
+        guard let json = call(fn, [suggestions]),
+              let value = try? JSONSerialization.jsonObject(with: Data(json.utf8), options: .fragmentsAllowed) as? [Any]
+        else { return nil }
+        return value.compactMap { $0 as? JSONObject }
+    }
+
     public func postProcess(_ fn: Int, output: String, tokens: [String]) -> [SpecSuggestion] {
         suggestions(from: call(fn, [output, tokens]))
     }

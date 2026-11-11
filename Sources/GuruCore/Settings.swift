@@ -4,10 +4,17 @@ public enum EnterAction: String, Codable, Sendable, CaseIterable {
     case insert, execute
 }
 
+public enum DetailsPosition: String, Codable, Sendable, CaseIterable {
+    case side, below
+
+    public var toggled: DetailsPosition { self == .side ? .below : .side }
+}
+
 public struct GuruSettings: Codable, Equatable, Sendable {
     public var maxRows = 8
     public var historySuggestions = true
     public var showDetails = true
+    public var detailsPosition = DetailsPosition.side
     public var enterAction = EnterAction.insert
     public var checkForUpdates = true
 
@@ -18,6 +25,7 @@ public struct GuruSettings: Codable, Equatable, Sendable {
         maxRows = try container.decodeIfPresent(Int.self, forKey: .maxRows) ?? 8
         historySuggestions = try container.decodeIfPresent(Bool.self, forKey: .historySuggestions) ?? true
         showDetails = try container.decodeIfPresent(Bool.self, forKey: .showDetails) ?? true
+        detailsPosition = try container.decodeIfPresent(DetailsPosition.self, forKey: .detailsPosition) ?? .side
         enterAction = try container.decodeIfPresent(EnterAction.self, forKey: .enterAction) ?? .insert
         checkForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checkForUpdates) ?? true
     }

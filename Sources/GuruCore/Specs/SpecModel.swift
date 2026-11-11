@@ -18,6 +18,10 @@ func functionID(_ value: Any?) -> Int? {
     (value as? JSONObject)?["__fn"] as? Int
 }
 
+func parseIcon(_ value: Any?) -> SuggestionIcon? {
+    (value as? String).flatMap(SuggestionIcon.parse)
+}
+
 public struct SpecSuggestion: Sendable {
     public var names: [String]
     public var displayName: String?
@@ -26,6 +30,7 @@ public struct SpecSuggestion: Sendable {
     public var priority: Double?
     public var hidden: Bool
     public var type: String?
+    public var icon: SuggestionIcon?
 
     init?(_ value: Any) {
         if let s = value as? String {
@@ -44,6 +49,7 @@ public struct SpecSuggestion: Sendable {
         priority = (o["priority"] as? NSNumber)?.doubleValue
         hidden = o["hidden"] as? Bool ?? false
         type = o["type"] as? String
+        icon = parseIcon(o["icon"])
     }
 
     static func list(_ value: Any?) -> [SpecSuggestion] {
@@ -71,6 +77,43 @@ public enum ScriptSource: Sendable {
     }
 }
 
+/// When a generator re-runs while the same word is edited; Fig's `trigger`.
+public enum GeneratorTrigger: Sendable, Equatable {
+    /// Fires when the word's count of this string changes, so "/" fires on each new path level.
+    case string(String)
+    case function(Int)
+    case change
+    case threshold(Int)
+
+    init?(_ value: Any?) {
+        if let id = functionID(value) { self = .function(id); return }
+        if let s = value as? String, !s.isEmpty { self = .string(s); return }
+        guard let o = value as? JSONObject else { return nil }
+        switch o["on"] as? String {
+        case "change": self = .change
+        case "threshold": self = .threshold((o["length"] as? NSNumber)?.intValue ?? 0)
+        default: return nil
+        }
+    }
+}
+
+public struct GeneratorCachePolicy: Sendable, Equatable {
+    public var ttl: TimeInterval
+    public var staleWhileRevalidate: Bool
+
+    public static let standard = GeneratorCachePolicy(ttl: 5, staleWhileRevalidate: false)
+
+    init(ttl: TimeInterval, staleWhileRevalidate: Bool) {
+        self.ttl = ttl; self.staleWhileRevalidate = staleWhileRevalidate
+    }
+
+    init?(_ value: Any?) {
+        guard let o = value as? JSONObject else { return nil }
+        ttl = (o["ttl"] as? NSNumber).map { $0.doubleValue / 1000 } ?? Self.standard.ttl
+        staleWhileRevalidate = o["strategy"] as? String == "stale-while-revalidate"
+    }
+}
+
 public struct SpecGenerator: Sendable {
     public var template: [String]
     public var script: ScriptSource?
@@ -80,6 +123,9 @@ public struct SpecGenerator: Sendable {
     /// Separator after which the word is matched (e.g. "/" for paths).
     public var queryTermSeparator: String?
     public var queryTermFunction: Int?
+    public var trigger: GeneratorTrigger?
+    public var cache: GeneratorCachePolicy
+    public var filterTemplateSuggestions: Int?
 
     init(_ o: JSONObject) {
         queryTermSeparator = o["getQueryTerm"] as? String
@@ -89,6 +135,22 @@ public struct SpecGenerator: Sendable {
         splitOn = o["splitOn"] as? String
         postProcess = functionID(o["postProcess"])
         custom = functionID(o["custom"])
+        trigger = GeneratorTrigger(o["trigger"])
+        cache = GeneratorCachePolicy(o["cache"]) ?? .standard
+        filterTemplateSuggestions = functionID(o["filterTemplateSuggestions"])
+    }
+
+    /// Stable for one loaded spec, so per-generator state survives a script function resolving to new argv.
+    var identity: String {
+        if let custom { return "c\(custom)" }
+        let source: String
+        switch script {
+        case let .argv(argv)?: source = argv.joined(separator: "\u{0}")
+        case let .shell(command)?: source = command
+        case let .function(fn)?: source = "f\(fn)"
+        case nil: source = ""
+        }
+        return "s\(postProcess ?? -1)|\(source)"
     }
 }
 
@@ -124,6 +186,9 @@ public final class SpecOption: @unchecked Sendable {
     public let insertValue: String?
     public let hidden: Bool
     public let priority: Double?
+    public let icon: SuggestionIcon?
+    public let exclusiveOn: [String]
+    public let dependsOn: [String]
 
     init(_ o: JSONObject) {
         names = stringList(o["name"])
@@ -141,6 +206,9 @@ public final class SpecOption: @unchecked Sendable {
         insertValue = o["insertValue"] as? String
         hidden = o["hidden"] as? Bool ?? false
         priority = (o["priority"] as? NSNumber)?.doubleValue
+        icon = parseIcon(o["icon"])
+        exclusiveOn = stringList(o["exclusiveOn"])
+        dependsOn = stringList(o["dependsOn"])
     }
 }
 
@@ -154,6 +222,7 @@ public final class SpecCommand: @unchecked Sendable {
     public let insertValue: String?
     public let hidden: Bool
     public let priority: Double?
+    public let icon: SuggestionIcon?
     public let additionalSuggestions: [SpecSuggestion]
     public let generateSpec: Int?
 
@@ -167,6 +236,7 @@ public final class SpecCommand: @unchecked Sendable {
         insertValue = o["insertValue"] as? String
         hidden = o["hidden"] as? Bool ?? false
         priority = (o["priority"] as? NSNumber)?.doubleValue
+        icon = parseIcon(o["icon"])
         additionalSuggestions = SpecSuggestion.list(o["additionalSuggestions"])
         generateSpec = functionID(o["generateSpec"])
     }
@@ -182,6 +252,7 @@ public final class SpecCommand: @unchecked Sendable {
         insertValue = base.insertValue
         hidden = base.hidden
         priority = base.priority
+        icon = base.icon
         additionalSuggestions = base.additionalSuggestions + generated.additionalSuggestions
         generateSpec = nil
     }

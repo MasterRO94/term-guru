@@ -85,9 +85,18 @@ private struct GeneralPane: View {
                 ))
                 Toggle("Pause suggestions", isOn: $model.paused)
             }
-            Section("Popup") {
+            Section {
                 Stepper("Visible rows: \(model.settings.maxRows)", value: $model.settings.maxRows, in: 4...14)
                 Toggle("Show description panel", isOn: $model.settings.showDetails)
+                Picker("Description panel", selection: $model.settings.detailsPosition) {
+                    Text("Beside the list").tag(DetailsPosition.side)
+                    Text("Below the list").tag(DetailsPosition.below)
+                }
+                .disabled(!model.settings.showDetails)
+            } header: {
+                Text("Popup")
+            } footer: {
+                Text("⌘I switches the description between beside and below while the popup shows.")
             }
             Section {
                 Picker("Return on a selected suggestion", selection: $model.settings.enterAction) {

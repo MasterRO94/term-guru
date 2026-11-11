@@ -4,6 +4,18 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- Icons in the popup: the spec's own emoji, `fig://icon` types and `fig://template` color badges, and file-type icons for files and folders. Icons that specs load from the web are never fetched.
+- The description can sit below the list instead of beside it: **Settings › General › Description panel**, or ⌘I while the popup shows (saved; needs the Accessibility permission).
+- `cd`, `pushd` and other folder lists suggest `../`, `../../` and up to five parent levels, each with the folder it leads to.
+- Spec support for `exclusiveOn` and `dependsOn` (conflicting options disappear, dependent ones wait for their option), generator `trigger` and `cache` (`ttl`, `stale-while-revalidate`), `filterTemplateSuggestions`, and the `help` and `history` templates.
+
+### Changed
+
+- Generators keep their results for the spec's own cache lifetime instead of a fixed 5 seconds, and generators with a `trigger` re-run only when it fires.
+- Tab with no popup is documented: the shell's own completion (compinit, fzf-tab, bash's `complete`) runs.
+
 ## [0.2.4] - 2026-11-11
 
 ### Fixed

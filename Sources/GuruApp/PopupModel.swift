@@ -6,6 +6,10 @@ final class PopupModel: ObservableObject {
     @Published var selected = 0
     @Published var maxRows = 8
     @Published var showDetails = true
+    @Published var detailsPosition = DetailsPosition.side
+    /// Height SwiftUI laid the list and card out at; the panel places itself by it.
+    var contentHeight: CGFloat = 0
+    var onContentHeight: (() -> Void)?
 
     var current: Suggestion? { items.indices.contains(selected) ? items[selected] : nil }
 

@@ -6,6 +6,8 @@ enum PopupMetrics {
     static let maxRowsLimit = 14
     static let listWidth: CGFloat = 320
     static let detailWidth: CGFloat = 250
+    /// Tallest the card gets: caption, two title lines and six description lines.
+    static let detailMaxHeight: CGFloat = 200
     static let padding: CGFloat = 6
     static let spacing: CGFloat = 6
     static let corner: CGFloat = 14
@@ -21,14 +23,31 @@ struct PopupView: View {
 
     var body: some View {
         GlassEffectContainer(spacing: PopupMetrics.spacing) {
-            HStack(alignment: .top, spacing: PopupMetrics.spacing) {
-                list
-                if model.showDetails, let item = model.current, !item.description.isEmpty {
-                    DetailCard(item: item)
+            Group {
+                if model.detailsPosition == .below {
+                    VStack(alignment: .leading, spacing: PopupMetrics.spacing) {
+                        list
+                        details(width: PopupMetrics.listWidth)
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: PopupMetrics.spacing) {
+                        list
+                        details(width: PopupMetrics.detailWidth)
+                    }
                 }
+            }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                model.contentHeight = height
+                model.onContentHeight?()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    @ViewBuilder private func details(width: CGFloat) -> some View {
+        if model.showDetails, let item = model.current, !item.description.isEmpty {
+            DetailCard(item: item, width: width)
+        }
     }
 
     private var list: some View {
@@ -59,9 +78,7 @@ private struct SuggestionRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: item.kind.symbol)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(item.kind.tint))
+            SuggestionIconView(item: item, isSelected: isSelected)
                 .frame(width: 18)
             Text(item.display)
                 .font(.system(size: 13, design: .monospaced))
@@ -85,6 +102,7 @@ private struct SuggestionRow: View {
 
 private struct DetailCard: View {
     let item: Suggestion
+    let width: CGFloat
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -101,7 +119,7 @@ private struct DetailCard: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
-        .frame(width: PopupMetrics.detailWidth, alignment: .leading)
+        .frame(width: width, alignment: .leading)
         .glassEffect(.regular, in: .rect(cornerRadius: PopupMetrics.corner))
     }
 }

@@ -105,12 +105,15 @@ While the popup shows:
 | Key | Action |
 | --- | --- |
 | ↑ / ↓ | Select a suggestion |
-| Tab | Insert the highlighted suggestion |
+| Tab | Insert the highlighted suggestion. With no popup, the shell's own completion runs |
 | Return | Insert the highlighted suggestion, or run it, depending on the setting. Runs the line as typed when the current word is empty or already matches the top suggestion and you have not moved with ↑/↓ |
 | ⌘Return | Insert the highlighted suggestion and run it |
+| ⌘I | Show the description beside or below the list. The choice is saved |
 | Esc | Hide the popup until you move to another word. In vi mode it also switches to command mode, in the same press |
 
-⌘Return needs the Accessibility permission: terminals keep that shortcut for themselves, so TermGuru hands it to the shell as a plain Return while the popup is visible.
+⌘Return and ⌘I need the Accessibility permission: terminals keep those shortcuts for themselves (Terminal and iTerm open an inspector on ⌘I), so TermGuru takes them over only while the popup is visible. ⌘Return reaches the shell as a plain Return; ⌘I never reaches the terminal.
+
+Rows show the spec's own icon when it has one (emoji, `fig://icon` types and `fig://template` badges) and a file-type icon for files and folders, otherwise a symbol for the kind of suggestion. Icons that specs load from the web are never fetched.
 
 In vi mode (`bindkey -v` in zsh, `set -o vi` in bash) the popup works in insert mode and hides in command mode. zsh waits only 100 ms for Esc while the popup shows, if `KEYTIMEOUT` is at its default; a value you set yourself is kept. bash waits for readline's `keyseq-timeout` (500 ms by default) before it acts on Esc. In bash's emacs mode Esc is left alone, because it starts every Meta and arrow key there, so it does not hide the popup.
 
@@ -124,6 +127,7 @@ Open with `tgr settings` or from the menu bar item. Stored in `~/.config/term-gu
 | --- | --- | --- |
 | Visible rows | `maxRows` | `8` |
 | Show description panel | `showDetails` | `true` |
+| Description panel: *Beside the list* / *Below the list* (⌘I switches it) | `detailsPosition`: `side` / `below` | `side` |
 | Return on a selected suggestion: *Inserts it* / *Runs it* | `enterAction`: `insert` / `execute` | `insert` |
 | Suggest commands from shell history | `historySuggestions` | `true` |
 
@@ -181,6 +185,17 @@ export{spec as default};
 
 The file must be plain JavaScript without imports, ending in `export default spec;` or `export{spec as default}`. Fig's TypeScript specs compile to this with `esbuild --format=esm`. Generators (`script`, `postProcess`, `custom`, `generateSpec`) run in JavaScriptCore; their shell commands time out after 2 seconds, or the generator's `timeout` up to 3.
 
+Other Fig fields TermGuru reads:
+
+| Field | Effect |
+| --- | --- |
+| `exclusiveOn`, `dependsOn` on an option | Hidden while a conflicting option is on the line / until one of the listed options is. Any alias of a used option counts |
+| `trigger` on a generator | A string, a `(newToken, oldToken) => boolean` function, `{on: "change"}` or `{on: "threshold", length}`. While it does not fire, the last results are filtered as you type |
+| `cache` on a generator | `ttl` in milliseconds and `strategy: "stale-while-revalidate"`, which shows the cached results at once and refreshes them in the background. Without `cache`, results live 5 seconds. They are always kept per folder |
+| `filterTemplateSuggestions` | Filters and reprioritizes the files and folders of the generator's `template` |
+| `template: "help"` / `"history"` | The sibling subcommands (for `help <command>`) / words used after the same command in your shell history |
+| `icon` | See [Keys](#keys) |
+
 To ship a spec with TermGuru instead, put the same file in `Resources/custom-specs` and rebuild.
 
 ### The `tgr` spec
@@ -213,5 +228,6 @@ Start with `tgr doctor`; it names the fix for each failed check.
 | No popup in bash | bash is older than 4. `brew install bash` |
 | No popup in Warp | Not supported: Warp replaces the shell's line editor, so no shell hook can see its input |
 | A newly installed command has no suggestions | `tgr rescan` |
+| Tab does not reach compinit or fzf-tab | It does whenever the popup is hidden or empty. The order of the TermGuru line, `compinit` and fzf-tab in `.zshrc` does not matter: the hook wraps Tab again at every prompt and calls the widget it found |
 
 Logs are in `~/Library/Logs/TermGuru`; `tgr logs` prints the latest lines.

@@ -4,6 +4,55 @@ public enum SuggestionKind: String, Codable, Sendable {
     case command, subcommand, option, argument, file, folder, alias, history, script
 }
 
+public enum SuggestionIcon: Equatable, Sendable {
+    case emoji(String)
+    /// `fig://icon?type=…`; the app maps the type to an SF Symbol.
+    case fig(String)
+    /// `fig://template?color=…&badge=…`: a rounded square in that hex color with the badge text.
+    case template(color: String?, badge: String?)
+    /// Lowercased file extension, or "/" for a folder.
+    case fileType(String)
+
+    /// Remote URLs give nil: typing must never wait on the network, and fetching would leak the line to a third party.
+    public static func parse(_ raw: String) -> SuggestionIcon? {
+        let value = raw.trimmingCharacters(in: .whitespaces)
+        guard !value.isEmpty else { return nil }
+        if value.hasPrefix("fig://icon?") {
+            return query(value)["type"].map(SuggestionIcon.fig)
+        }
+        if value.hasPrefix("fig://template") {
+            let fields = query(value)
+            return .template(color: fields["color"], badge: fields["badge"])
+        }
+        if value.hasPrefix("fig://path/") {
+            let path = String(value.dropFirst("fig://path/".count))
+            return path.hasSuffix("/") ? .fileType("/") : fileType(name: (path as NSString).lastPathComponent)
+        }
+        if value.contains("://") || value.contains("/") { return nil }
+        // Emoji, sometimes with a variation selector or ZWJ sequence, are one or two grapheme clusters.
+        return value.count <= 2 ? .emoji(value) : nil
+    }
+
+    static func fileType(name: String) -> SuggestionIcon {
+        let ext = (name as NSString).pathExtension
+        // `.env` has no extension to NSString; its name is the type.
+        if ext.isEmpty, name.hasPrefix("."), name.count > 1 { return .fileType(name.dropFirst().lowercased()) }
+        return .fileType(ext.lowercased())
+    }
+
+    private static func query(_ url: String) -> [String: String] {
+        guard let mark = url.firstIndex(of: "?") else { return [:] }
+        var fields: [String: String] = [:]
+        for pair in url[url.index(after: mark)...].split(separator: "&") {
+            let parts = pair.split(separator: "=", maxSplits: 1)
+            guard parts.count == 2, !parts[1].isEmpty else { continue }
+            let value = String(parts[1])
+            fields[String(parts[0])] = value.removingPercentEncoding ?? value
+        }
+        return fields
+    }
+}
+
 public struct Suggestion: Equatable, Sendable, Identifiable {
     public var name: String
     /// Text shown in the list when it differs from the matched name.
@@ -16,13 +65,14 @@ public struct Suggestion: Equatable, Sendable, Identifiable {
     public var replace: Int
     /// How far to move the cursor back after inserting (Fig's `{cursor}` marker).
     public var cursorBack: Int
+    public var icon: SuggestionIcon?
     public var score: Double = 0
 
     public var id: String { "\(kind.rawValue):\(name):\(insert)" }
 
     public init(
         name: String, display: String? = nil, insert: String? = nil, description: String = "", kind: SuggestionKind,
-        priority: Double = 50, replace: Int = 0, cursorBack: Int = 0
+        priority: Double = 50, replace: Int = 0, cursorBack: Int = 0, icon: SuggestionIcon? = nil
     ) {
         self.name = name
         self.display = display ?? name
@@ -32,6 +82,7 @@ public struct Suggestion: Equatable, Sendable, Identifiable {
         self.priority = priority
         self.replace = replace
         self.cursorBack = cursorBack
+        self.icon = icon
     }
 }
 

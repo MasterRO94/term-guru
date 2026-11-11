@@ -54,6 +54,10 @@ final class Coordinator {
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [weak self] _ in self?.hide() }
         keyTap.isArmed = { [weak self] in self?.active?.popupVisible == true }
+        keyTap.onToggleDetails = { [weak self] in
+            guard let settings = self?.settingsWindow.model else { return }
+            settings.settings.detailsPosition = settings.settings.detailsPosition.toggled
+        }
         keyTap.ensure()
         installStatusItem()
         let settings = settingsWindow.model
@@ -175,7 +179,11 @@ final class Coordinator {
         case "demo":
             let point = NSEvent.mouseLocation
             popup.setCaret(CGRect(x: point.x, y: point.y, width: 1, height: 18), key: "demo\(generation)")
-            let request = EngineRequest(buffer: "git c", cursor: 5, cwd: "/", path: "")
+            // Optional buffer and cwd let screenshots show other lists, such as files with their icons.
+            let buffer = arguments.count > 1 ? arguments[1] : "git c"
+            let cwd = arguments.count > 2 ? arguments[2] : "/"
+            let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
+            let request = EngineRequest(buffer: buffer, cursor: buffer.count, cwd: cwd, path: path)
             engineQueue.async { [engine] in
                 let items = engine.suggest(request)
                 DispatchQueue.main.async {
@@ -214,6 +222,7 @@ final class Coordinator {
                 guard let self, current == self.generation, session === self.active else { return }
                 self.present(items, session: session, word: word)
             }
+            engine.refreshStale()
         }
     }
 
@@ -329,6 +338,10 @@ final class Coordinator {
     private func apply(_ settings: GuruSettings) {
         popup.model.maxRows = settings.maxRows
         popup.model.showDetails = settings.showDetails
+        if popup.model.detailsPosition != settings.detailsPosition {
+            popup.model.detailsPosition = settings.detailsPosition
+            popup.relayout()
+        }
         enterAction = settings.enterAction
         updates.automatic = settings.checkForUpdates
         engineQueue.async { [engine] in engine.useHistory = settings.historySuggestions }

@@ -57,6 +57,11 @@ for shell in "${SHELLS[@]}"; do
   # Redirect targets list files, whatever the command's spec says.
   check "$shell" "echo hi > app/" 'echo hi > ap' '\t'
   check "$shell" "git status >docs/" 'git status >do' '\t'
+  # cd lists parent levels; the top entry for ../.. is the next level up.
+  check "$shell" "cd ../../" 'cd ../..' '\t'
+  # With nothing to suggest, Tab runs the shell's own completion (here: a shell variable; bash adds a space).
+  space=; [[ $shell == *bash ]] && space=' '
+  GURU_PRE='TGRFALLBACK=1' check "$shell" "echo \$TGRFALLBACK$space" 'echo $TGRFALL' '\t'
   # Alt-b still moves back a word while and after the popup shows.
   check "$shell" "git Xch" 'git ch' '\x1bb' 'X'
   # vi mode: Esc dismisses and enters command mode in one press; then 0 goes to column 0.
