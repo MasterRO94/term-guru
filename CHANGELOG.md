@@ -4,6 +4,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-11
+
 ### Added
 
 - Command names, aliases, files and folders show icons from the MIT-licensed Material Icon Theme: tool logos for `docker`, `git`, `node`, `python3`, `cargo` and any other tool the theme has a logo for, and named folder icons such as `src/`, `docs/` and `.github/`. Light appearance uses the theme's light variants. Commands with no logo show their spec's own icon.
@@ -105,7 +107,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 - `tgr` CLI: `doctor`, `rescan`, `alias`, `install`, `uninstall`, `settings`, `status`, `start`, `stop`, `restart`, `logs`, `specs`, `complete`.
 - Settings window (General, Aliases, Diagnostics) and menu bar item.
 
-[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/MasterRO94/term-guru/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/MasterRO94/term-guru/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/MasterRO94/term-guru/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/MasterRO94/term-guru/compare/v0.2.2...v0.2.3
