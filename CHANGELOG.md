@@ -4,6 +4,14 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- `tgr status` shows whether the popup is visible.
+
+### Fixed
+
+- The popup no longer opens over a running command when a whole line arrives at once (an IDE plugin running a command, a paste ending in Return). It stayed on screen and ignored every key until the command finished.
+
 ## [0.3.0] - 2026-11-11
 
 ### Added

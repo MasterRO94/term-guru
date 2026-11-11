@@ -131,7 +131,10 @@ final class Coordinator {
             key(fields[1], session: session)
         case "X", "L":
             session.dismissedWord = nil
-            if session === active { hide() }
+            guard session === active else { break }
+            // Suggestions still being computed for the line just run must not open the popup over the command.
+            generation += 1
+            hide()
         default:
             break
         }
@@ -161,6 +164,7 @@ final class Coordinator {
                 "shells": sessions.values.map { ["pid": Int($0.pid), "shell": $0.shell] },
                 "ides": caret.connectedIDEs.map(Int.init),
                 "paused": paused,
+                "popup": popup.isVisible,
                 "accessibility": AXIsProcessTrusted(),
                 "specs": GuruResources.specDirectories.map(\.path),
             ]

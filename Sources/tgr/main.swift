@@ -274,6 +274,7 @@ struct Status: ParsableCommand {
         print("app        pid \(status.pid)\(status.paused ? " (paused)" : "")")
         print("shells     \(status.shellPIDs.isEmpty ? "none" : status.shellPIDs.map(String.init).joined(separator: ", "))")
         print("IDEs       \(status.idePIDs.isEmpty ? "none" : status.idePIDs.map(String.init).joined(separator: ", "))")
+        print("popup      \(status.popupVisible ? "visible" : "hidden")")
         if let caret = AppControl.request(["caret"], timeout: 1) { print("IDE caret  \(caret)") }
     }
 }

@@ -50,6 +50,8 @@ for shell in "${SHELLS[@]}"; do
   check "$shell" "git commit --amend " 'git commit --ame' '\t'
   check "$shell" "cd app/Models/" 'cd ap' '\t' 'Mo' '\t'
   check "$shell" "git status" 'git stauts' '\x7f\x7f\x7f' 'tus'
+  # A plugin or paste sends the line and Return at once: late suggestions for it must not open the popup while it runs.
+  GURU_PASTE=1 check "$shell" "hidden" "sleep 1; echo \"[\$(tgr status | awk '/^popup/{print \$2}')]\"; git status\r"
   check "$shell" "git checkout " 'git ch' '\r'
   # Nothing left to complete, so Return runs the line and the next prompt starts empty.
   check "$shell" "" 'git status' '\r'

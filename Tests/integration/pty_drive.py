@@ -7,6 +7,8 @@ vi = os.environ.get("GURU_VI") == "1"
 pre = os.environ.get("GURU_PRE", "")
 # A shell expression printed in front of the line, e.g. $KEYTIMEOUT.
 show = os.environ.get("GURU_SHOW", "")
+# Each step arrives in one write, as from a paste or an IDE plugin running a command; prints the first [...] line it outputs.
+paste = os.environ.get("GURU_PASTE") == "1"
 
 pid, fd = pty.fork()
 if pid == 0:
@@ -42,6 +44,13 @@ if pre:
     send(pre + "\r", 0.5)
 send(f"source '{script}'\r", 0.8)
 send("PS1='P> '\r", 0.5)
+if paste:
+    out = b"".join(send(step.encode().decode("unicode_escape"), 0.4) for step in sys.argv[4:]) + drain(2.5)
+    text = re.sub(rb"\x1b\[[0-9;?]*[a-zA-Z]|\x1b[=>]|\r", b"", out).decode(errors="replace")
+    lines = [l for l in text.splitlines() if l.startswith("[")]
+    print(lines[0] if lines else repr(text))
+    os.write(fd, b"exit\r")
+    sys.exit(0)
 for step in sys.argv[4:]:
     step = step.encode().decode("unicode_escape")
     # Escape sequences (arrows, Alt-b) arrive in one read, as from a real terminal.

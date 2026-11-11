@@ -81,6 +81,8 @@ _guru_key() {
   fi
   local action='""' map
   (( pass )) && action=${_guru_orig[$name]}
+  # bash has no preexec: tell the app the line is running, so late suggestions for it stay hidden.
+  [[ $name == enter ]] && (( pass )) && _guru_send X
   for map in emacs vi-insert; do
     bind -m "$map" "\"\C-x\C-_2${name}\": ${action}"
   done

@@ -6,6 +6,7 @@ public struct AppStatus: Sendable {
     public var idePIDs: [Int]
     public var paused: Bool
     public var accessibility: Bool
+    public var popupVisible: Bool
 }
 
 public enum AppControl {
@@ -25,7 +26,8 @@ public enum AppControl {
             shellPIDs: shells,
             idePIDs: object["ides"] as? [Int] ?? [],
             paused: object["paused"] as? Bool ?? false,
-            accessibility: object["accessibility"] as? Bool ?? false
+            accessibility: object["accessibility"] as? Bool ?? false,
+            popupVisible: object["popup"] as? Bool ?? false
         )
     }
 
