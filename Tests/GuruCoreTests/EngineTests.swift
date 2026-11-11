@@ -206,9 +206,8 @@ final class Sandbox {
         #expect(SuggestionIcon.parse("fig://icon?type=git") == .fig("git"))
         #expect(SuggestionIcon.parse("fig://template?color=2ecc71&badge=🔥") == .template(color: "2ecc71", badge: "🔥"))
         #expect(SuggestionIcon.parse("fig://template?badge=%F0%9F%91%A4") == .template(color: nil, badge: "👤"))
-        #expect(SuggestionIcon.parse("fig://path/Sources/") == .fileType("/"))
-        #expect(SuggestionIcon.parse("fig://path/a/README.md") == .fileType("md"))
-        #expect(SuggestionIcon.fileType(name: ".env") == .fileType("env"))
+        #expect(SuggestionIcon.parse("fig://path/Sources/") == .folder("Sources"))
+        #expect(SuggestionIcon.parse("fig://path/a/README.md") == .file("README.md"))
     }
 
     @Test func remoteAndEmptyGiveNil() {
@@ -227,13 +226,13 @@ final class Sandbox {
         #expect(box.suggest("x --").first { $0.name == "--star" }?.icon == .emoji("⭐️"))
     }
 
-    @Test func filesGetTheirType() throws {
+    @Test func filesCarryTheirName() throws {
         let box = try Sandbox([:])
         try box.touch("README.md", "Makefile", "docs/")
         let items = FileSuggestions.list(partial: "", rawPartial: "", cwd: box.cwd.path, foldersOnly: false).items
-        #expect(items.first { $0.name == "README.md" }?.icon == .fileType("md"))
-        #expect(items.first { $0.name == "Makefile" }?.icon == .fileType(""))
-        #expect(items.first { $0.name == "docs" }?.icon == .fileType("/"))
+        #expect(items.first { $0.name == "README.md" }?.icon == .file("README.md"))
+        #expect(items.first { $0.name == "Makefile" }?.icon == .file("Makefile"))
+        #expect(items.first { $0.name == "docs" }?.icon == .folder("docs"))
     }
 
     static let gitSpec = GuruResources.specs.appendingPathComponent("git.js")

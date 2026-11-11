@@ -30,6 +30,8 @@ public enum GuruResources {
     public static var customSpecs: URL { root.appendingPathComponent("custom-specs", isDirectory: true) }
     public static var specDirectories: [URL] { [GuruPaths.userSpecs, customSpecs, specs] }
     public static var shell: URL { root.appendingPathComponent("shell", isDirectory: true) }
+    /// Material Icon Theme; `Scripts/fetch-icons.sh` fills it.
+    public static var icons: URL { root.appendingPathComponent("icons", isDirectory: true) }
 }
 
 public enum GuruVersion {

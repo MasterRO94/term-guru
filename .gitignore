@@ -1,6 +1,7 @@
 .build/
 build/
 Resources/specs/
+Resources/icons/
 node_modules/
 .DS_Store
 .idea/

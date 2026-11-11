@@ -30,7 +30,7 @@ enum FileSuggestions {
                 kind: isDir.boolValue ? .folder : .file,
                 priority: isDir.boolValue ? 46 : 45,
                 replace: rawQuery.count,
-                icon: isDir.boolValue ? .fileType("/") : SuggestionIcon.fileType(name: entry)
+                icon: isDir.boolValue ? .folder(entry) : .file(entry)
             ))
             if items.count >= 2000 { break }
         }
@@ -53,7 +53,7 @@ enum FileSuggestions {
             let name = String(repeating: "../", count: level)
             let shown = path == home ? "~" : path.hasPrefix(home + "/") ? "~" + path.dropFirst(home.count) : path
             items.append(Suggestion(name: name, insert: name, description: shown, kind: .folder,
-                                    priority: 44, replace: replace, icon: .fileType("/")))
+                                    priority: 44, replace: replace, icon: .folder("..")))
         }
         return items
     }

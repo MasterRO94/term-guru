@@ -25,7 +25,7 @@ The app offers new releases from its menu bar item and rebuilds itself from this
 
 - `Resources/shell/guru.{zsh,bash}` report the edit buffer over a unix socket and wrap Tab, Return and the arrow keys.
 - `Sources/GuruCore` tokenizes the line, walks MIT-licensed Fig specs (`@withfig/autocomplete`, run in JavaScriptCore) and mixes in aliases, history, PATH commands and files.
-- `Sources/GuruApp` is the menu bar app: socket server, Liquid Glass popup, settings.
+- `Sources/GuruApp` is the menu bar app: socket server, Liquid Glass popup, settings. File, folder and tool icons come from the MIT-licensed Material Icon Theme (`Scripts/fetch-icons.sh`).
 - `Sources/tgr` is the CLI.
 - `jetbrains-plugin` reports the terminal caret rectangle from inside the IDE. Other terminals are read through the Accessibility API.
 

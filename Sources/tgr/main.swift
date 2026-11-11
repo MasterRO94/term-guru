@@ -10,7 +10,7 @@ struct Guru: ParsableCommand {
         subcommands: [
             Doctor.self, Rescan.self, Alias.self, Install.self, Uninstall.self,
             Settings.self, Start.self, Stop.self, Restart.self, Status.self, Logs.self, Specs.self, Update.self,
-            Init.self, Complete.self, Relay.self, FigSpec.self,
+            Init.self, Complete.self, Relay.self, FigSpec.self, SpecIcons.self,
         ]
     )
 }
@@ -316,6 +316,7 @@ struct Complete: ParsableCommand {
     @Argument(help: "Text left of the cursor.") var line: String
     @Option(help: "Directory holding compiled specs, instead of the usual ones.", completion: .directory) var specs: String?
     @Option var limit: Int = 12
+    @Flag(help: "Show which theme icon each row gets.") var icons = false
 
     func run() {
         let directories = specs.map { [URL(fileURLWithPath: $0)] } ?? GuruResources.specDirectories
@@ -324,13 +325,29 @@ struct Complete: ParsableCommand {
             buffer: line, cursor: line.count, cwd: FileManager.default.currentDirectoryPath,
             path: ProcessInfo.processInfo.environment["PATH"] ?? ""
         )
+        let theme = icons ? IconTheme(directory: GuruResources.icons) : nil
         let start = Date()
         let items = engine.suggest(request)
         for item in items.prefix(limit) {
             let name = item.display.padding(toLength: 34, withPad: " ", startingAt: 0)
-            print("\(item.kind.rawValue.padding(toLength: 10, withPad: " ", startingAt: 0)) \(name) \(item.description.prefix(60))")
+            let icon = icons ? Self.describe(item.icon, theme: theme).padding(toLength: 24, withPad: " ", startingAt: 0) + " " : ""
+            print("\(item.kind.rawValue.padding(toLength: 10, withPad: " ", startingAt: 0)) \(icon)\(name) \(item.description.prefix(60))")
         }
         print(String(format: "%d items, %.0f ms", items.count, Date().timeIntervalSince(start) * 1000))
+    }
+
+    /// Mirrors the popup's order: a theme logo, else the spec's icon, else the row kind's symbol.
+    static func describe(_ icon: SuggestionIcon?, theme: IconTheme?) -> String {
+        switch icon {
+        case let .emoji(text)?: return text
+        case let .template(color, badge)?: return "template \(color ?? "-") \(badge ?? "")"
+        case let .fig(type)?: return theme?.fig(type).map { "theme:\($0)" } ?? "fig:\(type)"
+        case let .file(name)?: return theme.map { "theme:\($0.file(name))" } ?? "file"
+        case let .folder(name)?: return theme.map { "theme:\($0.folder(name))" } ?? "folder"
+        case let .command(name, fallback)?:
+            return theme?.command(name).map { "theme:\($0)" } ?? describe(fallback, theme: theme)
+        case nil: return "-"
+        }
     }
 }
 
@@ -371,5 +388,23 @@ struct FigSpec: ParsableCommand {
 
     func run() throws {
         print(try ToolInfoSpec.module(fromDumpHelp: FileHandle.standardInput.readDataToEndOfFile()), terminator: "")
+    }
+}
+
+/// Scripts/build.sh writes this index into the specs directory, so command names get their spec's icon
+/// without loading every spec while the user types.
+struct SpecIcons: ParsableCommand {
+    static let configuration = CommandConfiguration(commandName: "_spec-icons", shouldDisplay: false)
+
+    @Argument(help: "Directory of compiled specs.", completion: .directory) var directory: String
+
+    func run() throws {
+        let runtime = SpecRuntime(directories: [URL(fileURLWithPath: directory)])
+        var icons: [String: String] = [:]
+        for name in runtime.commandNames().keys {
+            if let icon = runtime.spec(named: name)?.iconSource { icons[name] = icon }
+        }
+        let data = try JSONSerialization.data(withJSONObject: icons, options: [.sortedKeys, .prettyPrinted])
+        print(String(decoding: data, as: UTF8.self))
     }
 }

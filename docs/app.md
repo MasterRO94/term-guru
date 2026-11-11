@@ -6,7 +6,7 @@
 | --- | --- |
 | macOS 26 or newer | Liquid Glass popup |
 | Xcode 26 or newer (or its command line tools) | Swift 6 toolchain and the macOS 26 SDK |
-| Node.js with `npm` | Downloads the completion specs once, at build time |
+| Node.js with `npm` | Downloads the completion specs and the icon theme once, at build time |
 | A JetBrains IDE in `/Applications` or `~/Applications` | Optional. Compiles the [caret plugin](jetbrains-plugin.md) |
 | bash 4 or newer (`brew install bash`) | Optional. Only for bash; macOS ships 3.2, which is not supported |
 
@@ -26,7 +26,7 @@ To build a specific release, check out its tag first, for example `git checkout 
 
 `Scripts/install.sh` does the following:
 
-1. Downloads the Fig completion specs into `Resources/specs` if they are missing (`Scripts/fetch-specs.sh`).
+1. Downloads the Fig completion specs into `Resources/specs` and the Material Icon Theme into `Resources/icons` if they are missing (`Scripts/fetch-specs.sh`, `Scripts/fetch-icons.sh`).
 2. Builds `build/TermGuru.app` (`Scripts/build.sh`), generating the `tgr` spec from the CLI itself, and copies it to `~/Applications/TermGuru.app`.
 3. Links the CLI to `~/.local/bin/tgr`.
 4. Runs `tgr install`, which adds one line to `~/.zshrc` and `~/.bashrc` (it puts `~/.local/bin` on `PATH` when missing, then loads the hook; an older TermGuru line is replaced in place), installs the caret plugin into every JetBrains IDE config folder, adds a login item and starts the app.
@@ -88,7 +88,7 @@ The check reads tags over the checkout's `origin` remote, so it needs the same S
 git pull && Scripts/install.sh
 ```
 
-Run `Scripts/fetch-specs.sh` to refresh the completion specs; the install script only downloads them when they are missing.
+Run `Scripts/fetch-specs.sh` to refresh the completion specs, or `Scripts/fetch-icons.sh` for the icons; the install script only downloads them when they are missing.
 
 ### Uninstall
 
@@ -113,7 +113,7 @@ While the popup shows:
 
 ⌘Return and ⌘I need the Accessibility permission: terminals keep those shortcuts for themselves (Terminal and iTerm open an inspector on ⌘I), so TermGuru takes them over only while the popup is visible. ⌘Return reaches the shell as a plain Return; ⌘I never reaches the terminal.
 
-Rows show the spec's own icon when it has one (emoji, `fig://icon` types and `fig://template` badges) and a file-type icon for files and folders, otherwise a symbol for the kind of suggestion. Icons that specs load from the web are never fetched.
+Rows show the spec's own icon when it has one (emoji, `fig://icon` types and `fig://template` badges), otherwise a symbol for the kind of suggestion. Files, folders, commands and aliases use the MIT-licensed [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme), the icons VS Code users know: `src/` and `docs/` get their own folder icons, and `docker`, `node` or `python3` show the tool's logo. A command the theme has no logo for shows its spec's icon. Icons that specs load from the web are never fetched. `tgr complete --icons '<line>'` prints which icon each row gets.
 
 In vi mode (`bindkey -v` in zsh, `set -o vi` in bash) the popup works in insert mode and hides in command mode. zsh waits only 100 ms for Esc while the popup shows, if `KEYTIMEOUT` is at its default; a value you set yourself is kept. bash waits for readline's `keyseq-timeout` (500 ms by default) before it acts on Esc. In bash's emacs mode Esc is left alone, because it starts every Meta and arrow key there, so it does not hide the popup.
 

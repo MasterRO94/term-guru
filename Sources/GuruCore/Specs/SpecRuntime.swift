@@ -17,6 +17,7 @@ public final class SpecRuntime {
     /// Searched in order, so earlier directories override later ones.
     public let directories: [URL]
     private var cache: [String: SpecCommand?] = [:]
+    private var iconIndexes: [String: [String: String]?] = [:]
     private var execContext = GeneratorContext(cwd: "/", environment: [:], searchTerm: "")
 
     private static let bootstrap = """
@@ -59,7 +60,29 @@ public final class SpecRuntime {
         return loaded
     }
 
-    public func flushCache() { cache.removeAll() }
+    public func flushCache() {
+        cache.removeAll()
+        iconIndexes.removeAll()
+    }
+
+    /// File `Scripts/build.sh` writes into a spec directory: command name to its spec's `icon`.
+    public static let iconIndexName = "icons.json"
+
+    /// A command's own icon. Directories with an index answer without loading the spec; others (your own specs) load it.
+    public func rootIcon(named name: String) -> SuggestionIcon? {
+        guard let url = fileURL(for: name) else { return nil }
+        let directory = url.deletingLastPathComponent()
+        if let index = iconIndex(directory) { return index[name].flatMap(SuggestionIcon.parse) }
+        return spec(named: name)?.icon
+    }
+
+    private func iconIndex(_ directory: URL) -> [String: String]? {
+        if let hit = iconIndexes[directory.path] { return hit }
+        let data = try? Data(contentsOf: directory.appendingPathComponent(Self.iconIndexName))
+        let index = data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: String] }
+        iconIndexes[directory.path] = .some(index)
+        return index
+    }
 
     public func fileURL(for name: String) -> URL? {
         guard !name.isEmpty, !name.hasPrefix("/"), !name.hasPrefix("."), !name.contains("..") else { return nil }

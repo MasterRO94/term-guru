@@ -6,6 +6,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ### Added
 
+- Command names, aliases, files and folders show icons from the MIT-licensed Material Icon Theme: tool logos for `docker`, `git`, `node`, `python3`, `cargo` and any other tool the theme has a logo for, and named folder icons such as `src/`, `docs/` and `.github/`. Light appearance uses the theme's light variants. Commands with no logo show their spec's own icon.
+- `tgr complete --icons` prints the icon each row gets.
 - `tgr status` shows whether the popup is visible.
 
 ### Fixed

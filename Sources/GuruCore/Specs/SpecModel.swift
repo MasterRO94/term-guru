@@ -223,6 +223,8 @@ public final class SpecCommand: @unchecked Sendable {
     public let hidden: Bool
     public let priority: Double?
     public let icon: SuggestionIcon?
+    /// `icon` as the spec wrote it, for the build-time command icon index.
+    public let iconSource: String?
     public let additionalSuggestions: [SpecSuggestion]
     public let generateSpec: Int?
 
@@ -237,6 +239,7 @@ public final class SpecCommand: @unchecked Sendable {
         hidden = o["hidden"] as? Bool ?? false
         priority = (o["priority"] as? NSNumber)?.doubleValue
         icon = parseIcon(o["icon"])
+        iconSource = o["icon"] as? String
         additionalSuggestions = SpecSuggestion.list(o["additionalSuggestions"])
         generateSpec = functionID(o["generateSpec"])
     }
@@ -253,6 +256,7 @@ public final class SpecCommand: @unchecked Sendable {
         hidden = base.hidden
         priority = base.priority
         icon = base.icon
+        iconSource = base.iconSource
         additionalSuggestions = base.additionalSuggestions + generated.additionalSuggestions
         generateSpec = nil
     }

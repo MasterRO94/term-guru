@@ -29,6 +29,7 @@ public final class Engine {
     private var triggerState: [String: (token: String, items: [SpecSuggestion], used: Date)] = [:]
 
     private var generatedSpecs: [String: (spec: SpecCommand, at: Date)] = [:]
+    private var commandIcons: [String: SuggestionIcon?] = [:]
 
     private typealias Group = (items: [Suggestion], query: String)
 
@@ -45,6 +46,7 @@ public final class Engine {
         staleRefreshes.removeAll()
         triggerState.removeAll()
         generatedSpecs.removeAll()
+        commandIcons.removeAll()
         history.reload(force: true)
     }
 
@@ -76,7 +78,28 @@ public final class Engine {
         for group in groups { merged += Fuzzy.rank(group.items, query: group.query, limit: limit) }
         merged.sort { $0.score > $1.score }
         var seen = Set<String>()
-        return Array(merged.filter { seen.insert($0.insert).inserted }.prefix(limit))
+        return Array(merged.filter { seen.insert($0.insert).inserted }.prefix(limit)).map(withCommandIcon)
+    }
+
+    /// Only the shown rows get icons: PATH holds thousands of commands.
+    private func withCommandIcon(_ item: Suggestion) -> Suggestion {
+        guard item.icon == nil else { return item }
+        let command: String
+        switch item.kind {
+        case .command: command = item.name
+        case .alias: guard let first = Tokenizer.parse(item.description).tokens.first, !first.isEmpty else { return item }; command = first
+        default: return item
+        }
+        var item = item
+        item.icon = .command(command, fallback: rootIcon(command))
+        return item
+    }
+
+    private func rootIcon(_ command: String) -> SuggestionIcon? {
+        if let hit = commandIcons[command] { return hit }
+        let icon = specs.rootIcon(named: (command as NSString).lastPathComponent)
+        commandIcons[command] = .some(icon)
+        return icon
     }
 
     /// Re-runs the stale-while-revalidate generators the last requests served from cache; call after replying.
@@ -464,8 +487,8 @@ public final class Engine {
             var resolved = kind
             var icon = item.icon
             switch item.type {
-            case "folder": resolved = .folder; icon = icon ?? .fileType("/")
-            case "file": resolved = .file; icon = icon ?? SuggestionIcon.fileType(name: item.names[0])
+            case "folder": resolved = .folder; icon = icon ?? .folder(item.names[0])
+            case "file": resolved = .file; icon = icon ?? .file(item.names[0])
             case "subcommand": resolved = .subcommand
             case "option": resolved = .option
             default: break

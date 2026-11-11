@@ -1,7 +1,7 @@
 import SwiftUI
 import GuruCore
 
-/// SF Symbols for `fig://icon?type=…`. Brand types with no symbol (docker, npm, node, kubernetes…) are left out.
+/// SF Symbols for `fig://icon?type=…`; brand types get theme logos instead (`IconTheme.fig`).
 enum FigIcons {
     static let symbols: [String: String] = [
         "git": "arrow.triangle.branch",
@@ -26,11 +26,16 @@ enum FigIcons {
     ]
 }
 
-/// SF Symbols by lowercased file extension; "/" is a folder.
+/// SF Symbols by lowercased file extension, for builds without the icon theme.
 enum FileIcons {
+    static func symbol(forFile name: String) -> String? {
+        let ext = (name as NSString).pathExtension
+        // `.env` has no extension to NSString; its name is the type.
+        return symbols[ext.isEmpty && name.hasPrefix(".") ? String(name.dropFirst()).lowercased() : ext.lowercased()]
+    }
+
     static let symbols: [String: String] = {
         var table: [String: String] = [
-            "/": "folder",
             "swift": "swift",
             "json": "curlybraces.square",
             "md": "doc.richtext", "markdown": "doc.richtext",
@@ -52,30 +57,61 @@ enum FileIcons {
     }()
 }
 
+/// Theme SVGs, decoded once each.
+enum ThemeIcons {
+    static let theme = IconTheme(directory: GuruResources.icons)
+    private static var images: [String: NSImage] = [:]
+
+    static func image(_ id: String) -> NSImage? {
+        if let hit = images[id] { return hit }
+        guard let theme, let image = NSImage(contentsOf: theme.url(id)) else { return nil }
+        images[id] = image
+        return image
+    }
+}
+
 struct SuggestionIconView: View {
     let item: Suggestion
     let isSelected: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
-    var body: some View {
-        switch item.icon {
+    var body: some View { view(for: item.icon) }
+
+    private func view(for icon: SuggestionIcon?) -> AnyView {
+        let theme = ThemeIcons.theme
+        let light = colorScheme == .light
+        switch icon {
         case let .emoji(text)?:
-            // Emoji keep their own colors on the selected row.
-            Text(text).font(.system(size: 12))
+            // Emoji and logos keep their own colors on the selected row.
+            return AnyView(Text(text).font(.system(size: 12)))
         case let .template(color, badge)?:
-            TemplateIcon(hex: color, badge: badge)
+            return AnyView(TemplateIcon(hex: color, badge: badge))
         case let .fig(type)?:
-            symbol(FigIcons.symbols[type])
-        case let .fileType(ext)?:
-            symbol(FileIcons.symbols[ext])
+            if let id = theme?.fig(type, light: light), let logo = logo(id) { return logo }
+            return symbol(FigIcons.symbols[type])
+        case let .file(name)?:
+            if let id = theme?.file(name, light: light), let logo = logo(id) { return logo }
+            return symbol(FileIcons.symbol(forFile: name))
+        case let .folder(name)?:
+            if let id = theme?.folder(name, light: light), let logo = logo(id) { return logo }
+            return symbol("folder")
+        case let .command(name, fallback)?:
+            if let id = theme?.command(name, light: light), let logo = logo(id) { return logo }
+            return fallback.map { view(for: $0) } ?? symbol(nil)
         case nil:
-            symbol(nil)
+            return symbol(nil)
         }
     }
 
-    private func symbol(_ name: String?) -> some View {
-        Image(systemName: name ?? item.kind.symbol)
+    private func logo(_ id: String) -> AnyView? {
+        guard let image = ThemeIcons.image(id) else { return nil }
+        return AnyView(Image(nsImage: image).resizable().interpolation(.high).scaledToFit().frame(width: 15, height: 15))
+    }
+
+    private func symbol(_ name: String?) -> AnyView {
+        AnyView(Image(systemName: name ?? item.kind.symbol)
             .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(item.kind.tint))
+            .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(item.kind.tint)))
     }
 
     static func color(hex: String) -> Color? {

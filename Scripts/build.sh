@@ -5,9 +5,12 @@ cd "$(dirname "$0")/.."
 CONFIG="${CONFIG:-release}"
 VERSION="$(tr -d '[:space:]' < VERSION)"
 [ -d Resources/specs ] || Scripts/fetch-specs.sh
+[ -d Resources/icons ] || Scripts/fetch-icons.sh
 swift build -c "$CONFIG"
 BIN="$(swift build -c "$CONFIG" --show-bin-path)"
 "$BIN/tgr" --experimental-dump-help | "$BIN/tgr" _fig-spec > Resources/specs/tgr.js
+# Command names show their spec's icon without loading every spec while the user types.
+"$BIN/tgr" _spec-icons Resources/specs > Resources/specs/icons.json
 
 APP="build/TermGuru.app/Contents"
 rm -rf build/TermGuru.app
@@ -23,6 +26,7 @@ cp Resources/app/AppIcon.icns "$APP/Resources/AppIcon.icns"
 cp -R Resources/shell "$APP/Resources/shell"
 cp -R Resources/specs "$APP/Resources/specs"
 cp -R Resources/custom-specs "$APP/Resources/custom-specs"
+cp -R Resources/icons "$APP/Resources/icons"
 
 # Any installed JetBrains IDE can compile the plugin; some bundle a JDK but not the platform jars, so try each.
 PLUGIN_BUILT=

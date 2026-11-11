@@ -4,14 +4,17 @@ public enum SuggestionKind: String, Codable, Sendable {
     case command, subcommand, option, argument, file, folder, alias, history, script
 }
 
-public enum SuggestionIcon: Equatable, Sendable {
+public indirect enum SuggestionIcon: Equatable, Sendable {
     case emoji(String)
-    /// `fig://icon?type=…`; the app maps the type to an SF Symbol.
+    /// `fig://icon?type=…`; the app maps the type to a logo or an SF Symbol.
     case fig(String)
     /// `fig://template?color=…&badge=…`: a rounded square in that hex color with the badge text.
     case template(color: String?, badge: String?)
-    /// Lowercased file extension, or "/" for a folder.
-    case fileType(String)
+    /// A file by its name, so both full names (`Makefile`) and extensions can pick the icon.
+    case file(String)
+    case folder(String)
+    /// A command's logo from the icon theme, else `fallback`: the icon its spec declares.
+    case command(String, fallback: SuggestionIcon?)
 
     /// Remote URLs give nil: typing must never wait on the network, and fetching would leak the line to a third party.
     public static func parse(_ raw: String) -> SuggestionIcon? {
@@ -26,18 +29,12 @@ public enum SuggestionIcon: Equatable, Sendable {
         }
         if value.hasPrefix("fig://path/") {
             let path = String(value.dropFirst("fig://path/".count))
-            return path.hasSuffix("/") ? .fileType("/") : fileType(name: (path as NSString).lastPathComponent)
+            let name = (path as NSString).lastPathComponent
+            return path.hasSuffix("/") ? .folder(name) : .file(name)
         }
         if value.contains("://") || value.contains("/") { return nil }
         // Emoji, sometimes with a variation selector or ZWJ sequence, are one or two grapheme clusters.
         return value.count <= 2 ? .emoji(value) : nil
-    }
-
-    static func fileType(name: String) -> SuggestionIcon {
-        let ext = (name as NSString).pathExtension
-        // `.env` has no extension to NSString; its name is the type.
-        if ext.isEmpty, name.hasPrefix("."), name.count > 1 { return .fileType(name.dropFirst().lowercased()) }
-        return .fileType(ext.lowercased())
     }
 
     private static func query(_ url: String) -> [String: String] {
