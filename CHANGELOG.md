@@ -4,6 +4,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-11
+
 ### Added
 
 - Icons in the popup: the spec's own emoji, `fig://icon` types and `fig://template` color badges, and file-type icons for files and folders. Icons that specs load from the web are never fetched.
@@ -93,7 +95,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 - `tgr` CLI: `doctor`, `rescan`, `alias`, `install`, `uninstall`, `settings`, `status`, `start`, `stop`, `restart`, `logs`, `specs`, `complete`.
 - Settings window (General, Aliases, Diagnostics) and menu bar item.
 
-[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/MasterRO94/term-guru/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/MasterRO94/term-guru/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/MasterRO94/term-guru/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/MasterRO94/term-guru/compare/v0.2.1...v0.2.2
