@@ -32,6 +32,6 @@ Scripts/release.sh
 
 `Scripts/release.sh` refuses to run with uncommitted changes, an existing tag or an empty changelog section. It creates the annotated tag `vX.Y.Z`, pushes the current branch and the tag to `origin`, and creates the GitHub release with that version's changelog section as its notes. It needs the [GitHub CLI](https://cli.github.com) signed in (`gh auth status`).
 
-## What a release triggers
+## How installed apps find a release
 
 The pushed `vX.Y.Z` tag is the update signal. Every installed app compares the highest such tag on `origin` with its own version and offers the update, so tag only commits that build and whose `VERSION` matches the tag: the updater fast-forwards to the tag and refuses an install that reports an older version. The GitHub release is for people; the app does not read it.

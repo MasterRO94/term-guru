@@ -39,7 +39,7 @@ cp -R build/jetbrains/termguru-caret ~/Library/Application\ Support/JetBrains/Ph
 
 To remove it, delete that folder, or run `tgr uninstall` to remove it from every IDE.
 
-## How it works
+## Source files and socket messages
 
 - Source: `jetbrains-plugin/src/dev/termguru/CaretBridge.java`, manifest: `jetbrains-plugin/resources/META-INF/plugin.xml`. The version is stamped from the repository's `VERSION` file at build time.
 - On IDE start the plugin connects to the app's unix socket, `~/Library/Application Support/TermGuru/run/guru.sock`, and reconnects every 2 seconds if the app is not running.

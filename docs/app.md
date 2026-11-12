@@ -7,6 +7,7 @@
 | macOS 26 or newer | Liquid Glass popup |
 | Xcode 26 or newer (or its command line tools) | Swift 6 toolchain and the macOS 26 SDK |
 | Node.js with `npm` | Downloads the completion specs and the icon theme once, at build time |
+| Git with a [GitHub SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) | Cloning and updates go over SSH |
 | A JetBrains IDE in `/Applications` or `~/Applications` | Optional. Compiles the [caret plugin](jetbrains-plugin.md) |
 | bash 4 or newer (`brew install bash`) | Optional. Only for bash; macOS ships 3.2, which is not supported |
 
@@ -15,7 +16,7 @@
 There are no prebuilt binaries. On each machine:
 
 ```bash
-git clone https://github.com/MasterRO94/term-guru.git
+git clone git@github.com:MasterRO94/term-guru.git
 ```
 
 ```bash
@@ -113,7 +114,7 @@ While the popup shows:
 
 ⌘Return and ⌘I need the Accessibility permission: terminals keep those shortcuts for themselves (Terminal and iTerm open an inspector on ⌘I), so TermGuru takes them over only while the popup is visible. ⌘Return reaches the shell as a plain Return; ⌘I never reaches the terminal.
 
-Rows show the spec's own icon when it has one (emoji, `fig://icon` types and `fig://template` badges), otherwise a symbol for the kind of suggestion. Files, folders, commands and aliases use the MIT-licensed [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme), the icons VS Code users know: `src/` and `docs/` get their own folder icons, and `docker`, `node` or `python3` show the tool's logo. A command the theme has no logo for shows its spec's icon. Icons that specs load from the web are never fetched. `tgr complete --icons '<line>'` prints which icon each row gets.
+Rows show the spec's own icon when it has one (emoji, `fig://icon` types and `fig://template` badges), otherwise a symbol for the kind of suggestion. Files, folders, commands and aliases use the MIT-licensed [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) from VS Code: `src/` and `docs/` get their own folder icons, and `docker`, `node` or `python3` show the tool's logo. A command the theme has no logo for shows its spec's icon. Icons that specs load from the web are never fetched. `tgr complete --icons '<line>'` prints which icon each row gets.
 
 In vi mode (`bindkey -v` in zsh, `set -o vi` in bash) the popup works in insert mode and hides in command mode. zsh waits only 100 ms for Esc while the popup shows, if `KEYTIMEOUT` is at its default; a value you set yourself is kept. bash waits for readline's `keyseq-timeout` (500 ms by default) before it acts on Esc. In bash's emacs mode Esc is left alone, because it starts every Meta and arrow key there, so it does not hide the popup.
 
