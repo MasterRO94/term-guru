@@ -133,3 +133,7 @@ make test.integration
 ```
 
 `make test` runs both.
+
+## License
+
+TermGuru is released under the [MIT License](LICENSE). Completion specs come from [`@withfig/autocomplete`](https://github.com/withfig/autocomplete) and icons from Material Icon Theme, both MIT-licensed.
