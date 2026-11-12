@@ -4,6 +4,10 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Changed
+
+- Multi-word `make` targets use a dot instead of a dash: `make install.replace`, `make reset.accessibility`, `make test.unit`, `make test.integration` and `make release.dry.run`.
+
 ## [0.3.1] - 2026-11-11
 
 ### Added

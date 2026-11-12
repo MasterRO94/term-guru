@@ -20,7 +20,7 @@ TermGuru is a Fig-style terminal autocomplete popup for macOS 26+ (Swift 6 toolc
 | Regenerate `tgr.js` spec only | `swift build && .build/debug/tgr --experimental-dump-help \| .build/debug/tgr _fig-spec > Resources/specs/tgr.js` |
 | JetBrains plugin only | `Scripts/build-plugin.sh /Applications/PhpStorm.app` |
 
-`Resources/specs/` and `Resources/icons/` are gitignored and downloaded by `Scripts/fetch-specs.sh` / `Scripts/fetch-icons.sh`; never edit them by hand. After rebuilding and reinstalling, ad-hoc signing invalidates the Accessibility grant: `make reset-accessibility`.
+`Resources/specs/` and `Resources/icons/` are gitignored and downloaded by `Scripts/fetch-specs.sh` / `Scripts/fetch-icons.sh`; never edit them by hand. After rebuilding and reinstalling, ad-hoc signing invalidates the Accessibility grant: `make reset.accessibility`.
 
 ## Architecture
 

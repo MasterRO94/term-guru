@@ -1,14 +1,14 @@
 .DEFAULT_GOAL := help
-.PHONY: help build debug plugin specs icon install install-replace update uninstall clean \
-        start stop restart status doctor logs settings rescan reset-accessibility \
-        test test-unit test-integration version release-dry-run release
+.PHONY: help build debug plugin specs icon install install.replace update uninstall clean \
+        start stop restart status doctor logs settings rescan reset.accessibility \
+        test test.unit test.integration version release.dry.run release
 
 TGR := $(HOME)/.local/bin/tgr
 # Any installed JetBrains IDE works; override with `make plugin IDE=/Applications/IntelliJ\ IDEA.app`.
 IDE ?= $(HOME)/Applications/PhpStorm.app
 
 help: ## List targets
-	@awk 'BEGIN { FS = ":.*## " } /^[a-z-]+:.*## / { printf "  \033[1m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	@awk 'BEGIN { FS = ":.*## " } /^[a-z.]+:.*## / { printf "  \033[1m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 ## Build
 
@@ -37,7 +37,7 @@ clean: ## Remove build output
 install: ## Build, install to ~/Applications, hook shells and IDEs
 	Scripts/install.sh
 
-install-replace: ## Install and comment out Figxit / Kiro CLI hooks
+install.replace: ## Install and comment out Figxit / Kiro CLI hooks
 	Scripts/install.sh --replace-others
 
 update: ## Install the newest release (fetch, rebuild, reinstall)
@@ -72,19 +72,19 @@ settings: ## Open the settings window
 rescan: ## Reload PATH commands, history and specs
 	$(TGR) rescan
 
-reset-accessibility: ## Clear the stale Accessibility grant after a rebuild, then restart
+reset.accessibility: ## Clear the stale Accessibility grant after a rebuild, then restart
 	tccutil reset Accessibility dev.termguru.app
 	$(TGR) restart
 	@echo "Now enable TermGuru in System Settings › Privacy & Security › Accessibility"
 
 ## Test
 
-test: test-unit test-integration ## Run all tests
+test: test.unit test.integration ## Run all tests
 
-test-unit: ## Run unit tests
+test.unit: ## Run unit tests
 	swift test
 
-test-integration: ## Drive real zsh and bash sessions against a headless app
+test.integration: ## Drive real zsh and bash sessions against a headless app
 	Tests/integration/run.sh
 
 ## Release
@@ -93,7 +93,7 @@ version: ## Print the source version and the installed one
 	@echo "source    $$(cat VERSION)"
 	@echo "installed $$($(TGR) --version 2>/dev/null || echo none)"
 
-release-dry-run: ## Show what `make release` would publish
+release.dry.run: ## Show what `make release` would publish
 	Scripts/release.sh --dry-run
 
 release: test ## Tag VERSION, push and create the GitHub release

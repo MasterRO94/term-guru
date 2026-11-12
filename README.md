@@ -2,6 +2,8 @@
 
 Fig-style autocomplete for the terminal on macOS. As you type a command, a popup opens next to the cursor with subcommands, options, arguments, files, aliases and commands from your history, each with a short description. Pick one with the arrow keys and press Tab.
 
+![TermGuru suggesting branches for git switch, docker compose subcommands and options, and Makefile targets in Terminal](docs/images/demo.gif)
+
 It works in JetBrains IDE terminals (PhpStorm, IntelliJ IDEA, WebStorm…), Terminal and iTerm, with zsh and bash 4+.
 
 ## Fig, Kiro CLI and JetBrains terminals
@@ -40,12 +42,12 @@ There are no prebuilt downloads: TermGuru is built from source on the Mac that r
 2. Build and install:
 
    ```bash
-   cd ~/term-guru && Scripts/install.sh
+   cd ~/term-guru && make install
    ```
 
    This builds the app, copies it to `~/Applications/TermGuru.app`, links the `tgr` command into `~/.local/bin`, adds one line to `~/.zshrc` and `~/.bashrc`, installs the plugin into your JetBrains IDEs, adds a login item and starts the app. A TermGuru icon appears in the menu bar.
 
-   If you used Figxit or Kiro CLI before, run `Scripts/install.sh --replace-others` instead to comment out their shell hooks.
+   If you used Figxit or Kiro CLI before, run `make install.replace` instead to comment out their shell hooks.
 
 3. **Grant Accessibility permission** (needed for Terminal and iTerm, and for ⌘Return and ⌘I everywhere): open **System Settings › Privacy & Security › Accessibility** and turn on **TermGuru**.
 
@@ -61,7 +63,7 @@ There are no prebuilt downloads: TermGuru is built from source on the Mac that r
 
 Keep the cloned folder: the app updates itself from it.
 
-> After every rebuild, macOS may show the Accessibility switch as on while it no longer works. Run `make reset-accessibility` and turn it on again. To avoid this, sign builds with your own certificate; see [Accessibility permission](docs/app.md#accessibility-permission).
+> After every rebuild, macOS may show the Accessibility switch as on while it no longer works. Run `make reset.accessibility` and turn it on again. To avoid this, sign builds with your own certificate; see [Accessibility permission](docs/app.md#accessibility-permission).
 
 ## Use
 
@@ -110,7 +112,7 @@ Then delete `~/Applications/TermGuru.app`, `~/.local/bin/tgr`, `~/.config/term-g
 
 ## For developers
 
-`make` lists shortcuts for building, installing, restarting, testing and releasing.
+Run `make` with no target to list the targets for building, installing, restarting, testing and releasing.
 
 Source layout:
 
@@ -120,12 +122,14 @@ Source layout:
 - `Sources/tgr` is the CLI.
 - `jetbrains-plugin` reports the terminal caret rectangle from inside the IDE. Other terminals are read through the Accessibility API.
 
-Tests:
+Unit tests, then integration tests that drive real zsh and bash sessions against a headless app:
 
 ```bash
-swift test
+make test.unit
 ```
 
 ```bash
-Tests/integration/run.sh
+make test.integration
 ```
+
+`make test` runs both.
