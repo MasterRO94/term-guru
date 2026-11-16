@@ -4,6 +4,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-16
+
 ### Changed
 
 - ↑ with the top suggestion selected closes the popup and goes to the shell's history (or its prefix search binding), so `git pull` ↑ ↑ walks matching commands again.
@@ -123,7 +125,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 - `tgr` CLI: `doctor`, `rescan`, `alias`, `install`, `uninstall`, `settings`, `status`, `start`, `stop`, `restart`, `logs`, `specs`, `complete`.
 - Settings window (General, Aliases, Diagnostics) and menu bar item.
 
-[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/MasterRO94/term-guru/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/MasterRO94/term-guru/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/MasterRO94/term-guru/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/MasterRO94/term-guru/compare/v0.2.4...v0.3.0
