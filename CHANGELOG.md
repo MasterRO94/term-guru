@@ -4,6 +4,12 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Changed
+
+- ↑ with the top suggestion selected closes the popup and goes to the shell's history (or its prefix search binding), so `git pull` ↑ ↑ walks matching commands again.
+- Lines recalled from history with ↑/↓ no longer open the popup; it opens once you edit the line.
+- Esc hides the popup until the line text changes, instead of until the cursor reaches another word.
+
 ## [0.3.2] - 2026-11-12
 
 ### Added

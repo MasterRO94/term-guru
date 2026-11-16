@@ -71,12 +71,12 @@ Start typing in a terminal, for example `git ch`. The popup opens below the curs
 
 | Key | Action |
 | --- | --- |
-| ↑ / ↓ | Select a suggestion |
+| ↑ / ↓ | Select a suggestion. ↑ on the top row closes the popup and goes to your shell history; a line recalled from history opens the popup only once you edit it |
 | Tab | Insert the selected suggestion. With no popup, your shell's normal Tab completion runs |
 | Return | Insert the selected suggestion (or run it, if you change the setting). Runs the line as typed when there is nothing to complete |
 | ⌘Return | Insert the selected suggestion and run it |
 | ⌘I | Move the description panel beside or below the list |
-| Esc | Hide the popup until you move to the next word |
+| Esc | Hide the popup until you change the line |
 
 A few useful commands:
 

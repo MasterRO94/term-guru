@@ -10,6 +10,7 @@ _guru_us=$'\x1f'
 _guru_rs=$'\x1e'
 _guru_alias_file="$HOME/.config/term-guru/aliases.sh"
 _guru_visible=0
+_guru_recalled=0
 _guru_last=
 _guru_sent_aliases=
 _guru_alias_mtime=0
@@ -53,6 +54,12 @@ _guru_apply() {
 # Runs after every key: reports the line and picks up the popup state.
 _guru_hook() {
   local state="$READLINE_POINT$_guru_us$READLINE_LINE" line
+  # A line recalled from history is not an edit: leave the popup closed so the next Up keeps walking history.
+  if (( _guru_recalled )); then
+    _guru_recalled=0
+    _guru_last=$state
+    return 0
+  fi
   [[ $state == "$_guru_last" ]] && return 0
   _guru_last=$state
   _guru_send "E${_guru_us}${READLINE_POINT}${_guru_us}${PWD}${_guru_us}${READLINE_LINE//$'\n'/$_guru_rs}" || return 0
@@ -81,6 +88,7 @@ _guru_key() {
   fi
   local action='""' map
   (( pass )) && action=${_guru_orig[$name]}
+  [[ $name == up || $name == down ]] && (( pass )) && _guru_recalled=1
   # bash has no preexec: tell the app the line is running, so late suggestions for it stay hidden.
   [[ $name == enter ]] && (( pass )) && _guru_send X
   for map in emacs vi-insert; do
@@ -144,6 +152,7 @@ _guru_prompt() {
   local status=$?
   _guru_last=
   _guru_visible=0
+  _guru_recalled=0
   _guru_connect && _guru_send L
   _guru_sync_aliases
   return $status

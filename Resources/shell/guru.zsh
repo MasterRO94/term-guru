@@ -136,6 +136,9 @@ _guru_key() {
     done
   fi
   [[ -n $orig && $orig != undefined-key ]] && zle $orig
+  # A line recalled from history is not an edit: leave the popup closed so the next Up keeps walking history.
+  [[ $name == up || $name == down ]] && _guru_last="$CURSOR$_guru_us$BUFFER"
+  return 0
 }
 
 _guru_key_up() { _guru_key up }

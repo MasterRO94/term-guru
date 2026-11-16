@@ -11,8 +11,8 @@ final class ShellSession {
     var cursor = 0
     var cwd = ""
     var popupVisible = false
-    /// Word index the user dismissed with Escape; the popup stays hidden until they move to another word.
-    var dismissedWord: Int?
+    /// Line the user dismissed with Escape; the popup stays hidden until its text changes.
+    var dismissedBuffer: String?
     lazy var hostApp: NSRunningApplication? = ProcessTree.owningApp(of: pid)
 
     init(connection: SocketConnection) { self.connection = connection }
@@ -130,7 +130,7 @@ final class Coordinator {
         case "K" where fields.count >= 2:
             key(fields[1], session: session)
         case "X", "L":
-            session.dismissedWord = nil
+            session.dismissedBuffer = nil
             guard session === active else { break }
             // Suggestions still being computed for the line just run must not open the popup over the command.
             generation += 1
@@ -216,9 +216,9 @@ final class Coordinator {
         let request = EngineRequest(buffer: session.buffer, cursor: session.cursor, cwd: session.cwd,
                                     path: session.path, aliases: session.aliases)
         let word = Tokenizer.parse(String(session.buffer.prefix(session.cursor))).tokens.count
-        if let dismissed = session.dismissedWord {
-            if dismissed == word { return }
-            session.dismissedWord = nil
+        if let dismissed = session.dismissedBuffer {
+            if dismissed == session.buffer { return }
+            session.dismissedBuffer = nil
         }
         engineQueue.async { [engine] in
             let items = engine.suggest(request)
@@ -281,6 +281,10 @@ final class Coordinator {
             return
         }
         switch name {
+        // Up from the top row belongs to the shell, so history recall keeps working while the popup shows.
+        case "up" where popup.model.selected == 0:
+            hide()
+            session.connection.send("P")
         case "up":
             popup.model.move(-1); navigated = true
             session.connection.send("N")
@@ -294,7 +298,7 @@ final class Coordinator {
         case "enter" where navigated || completes(item, session: session):
             session.connection.send(insertion(item, execute: enterAction == .execute))
         case "esc":
-            session.dismissedWord = Tokenizer.parse(String(session.buffer.prefix(session.cursor))).tokens.count
+            session.dismissedBuffer = session.buffer
             hide()
             session.connection.send("N")
         default:

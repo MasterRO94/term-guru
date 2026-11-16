@@ -43,6 +43,8 @@ for shell in /bin/zsh /opt/homebrew/bin/bash /usr/local/bin/bash; do
   [ -x "$shell" ] && SHELLS+=("$shell")
 done
 
+HIST=$'git pull origin master\ngit pull origin develop'
+
 start_app insert
 for shell in "${SHELLS[@]}"; do
   check "$shell" "git checkout " 'git ch' '\t'
@@ -71,11 +73,19 @@ for shell in "${SHELLS[@]}"; do
   # vi mode: after Esc the popup stays hidden, so Return runs the line.
   GURU_VI=1 check "$shell" "" 'git ch' '\x1b' 'A' '\r'
   GURU_VI=1 check "$shell" "git checkout " 'git ch' '\t'
+  # Up walks shell history: a recalled line keeps the popup closed, and Up from the popup's top row goes to history.
+  GURU_HISTORY="$HIST" check "$shell" "git pull origin master" '\x1b[A' '\x1b[A'
+  GURU_HISTORY="$HIST" check "$shell" "git pull origin develop" 'git ' '\x1b[A'
+  # Up still moves inside the list once Down entered it.
+  check "$shell" "git commit " 'git ' '\x1b[B' '\x1b[B' '\x1b[B' '\x1b[A' '\r'
 done
 
 ZSH=/bin/zsh
 if [ -x "$ZSH" ]; then
   check "$ZSH" "git Xch" 'git ch' '\x1b' '\x1bb' 'X'
+  # Esc keeps the popup closed for history recall, and typing in the same word reopens it.
+  GURU_HISTORY="$HIST" check "$ZSH" "git pull origin develop" 'git ch' '\x1b' '\x1b[A'
+  check "$ZSH" "git checkout " 'git chec' '\x1b' 'k' '\t'
   # Ctrl-G types KEYTIMEOUT into the line while the popup shows: shortened only from the default.
   KT='_kt() { LBUFFER+=$KEYTIMEOUT }; zle -N _kt; bindkey "^G" _kt'
   GURU_PRE="$KT" check "$ZSH" "git ch10" 'git ch' '\x07'

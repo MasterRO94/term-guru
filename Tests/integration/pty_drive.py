@@ -9,6 +9,8 @@ pre = os.environ.get("GURU_PRE", "")
 show = os.environ.get("GURU_SHOW", "")
 # Each step arrives in one write, as from a paste or an IDE plugin running a command; prints the first [...] line it outputs.
 paste = os.environ.get("GURU_PASTE") == "1"
+# Newline-separated lines that replace the shell's history, oldest first.
+history = [l for l in os.environ.get("GURU_HISTORY", "").split("\n") if l]
 
 pid, fd = pty.fork()
 if pid == 0:
@@ -44,6 +46,15 @@ if pre:
     send(pre + "\r", 0.5)
 send(f"source '{script}'\r", 0.8)
 send("PS1='P> '\r", 0.5)
+if history:
+    # A fresh list keeps the setup lines above out of it; bash must not write the test entries to ~/.bash_history.
+    if is_zsh:
+        send("fc -p; " + "; ".join(f"print -s '{l}'" for l in history) + "\r", 0.5)
+    else:
+        send("unset HISTFILE; history -c\r", 0.5)
+        # history -s replaces the line that ran it, so each entry needs its own line.
+        for l in history:
+            send(f"history -s '{l}'\r", 0.3)
 if paste:
     out = b"".join(send(step.encode().decode("unicode_escape"), 0.4) for step in sys.argv[4:]) + drain(2.5)
     text = re.sub(rb"\x1b\[[0-9;?]*[a-zA-Z]|\x1b[=>]|\r", b"", out).decode(errors="replace")

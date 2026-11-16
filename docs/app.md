@@ -105,12 +105,12 @@ While the popup shows:
 
 | Key | Action |
 | --- | --- |
-| ↑ / ↓ | Select a suggestion |
+| ↑ / ↓ | Select a suggestion. ↑ on the top row closes the popup and runs the shell's own ↑ (history, or your prefix search binding). Lines recalled with ↑/↓ open the popup only once you edit them, so ↑ ↑ Return works as without TermGuru |
 | Tab | Insert the highlighted suggestion. With no popup, the shell's own completion runs |
 | Return | Insert the highlighted suggestion, or run it, depending on the setting. Runs the line as typed when the current word is empty or already matches the top suggestion and you have not moved with ↑/↓ |
 | ⌘Return | Insert the highlighted suggestion and run it |
 | ⌘I | Show the description beside or below the list. The choice is saved |
-| Esc | Hide the popup until you move to another word. In vi mode it also switches to command mode, in the same press |
+| Esc | Hide the popup until you change the line; moving the cursor or recalling history keeps it hidden. In vi mode it also switches to command mode, in the same press |
 
 ⌘Return and ⌘I need the Accessibility permission: terminals keep those shortcuts for themselves (Terminal and iTerm open an inspector on ⌘I), so TermGuru takes them over only while the popup is visible. ⌘Return reaches the shell as a plain Return; ⌘I never reaches the terminal.
 
