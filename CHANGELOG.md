@@ -4,6 +4,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-25
+
 ### Added
 
 - A ⏎ row on top of the popup runs the line as typed. It shows once the word at the cursor is finished: after a space, when the word matches a suggestion exactly, or after a `/` in a path. `make cu`, ↓ to `cu.p`, Return, Return runs `make cu.p`. Tab on the row still inserts the suggestion below it, and ↓ Return picks that suggestion. Clicking the row runs the line too (needs the Accessibility permission).
@@ -134,7 +136,8 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 - `tgr` CLI: `doctor`, `rescan`, `alias`, `install`, `uninstall`, `settings`, `status`, `start`, `stop`, `restart`, `logs`, `specs`, `complete`.
 - Settings window (General, Aliases, Diagnostics) and menu bar item.
 
-[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/MasterRO94/term-guru/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/MasterRO94/term-guru/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/MasterRO94/term-guru/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/MasterRO94/term-guru/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/MasterRO94/term-guru/compare/v0.3.0...v0.3.1
