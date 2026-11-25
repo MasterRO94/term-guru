@@ -4,6 +4,15 @@ All notable changes to TermGuru are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- A ⏎ row on top of the popup runs the line as typed. It shows once the word at the cursor is finished: after a space, when the word matches a suggestion exactly, or after a `/` in a path. `make cu`, ↓ to `cu.p`, Return, Return runs `make cu.p`. Tab on the row still inserts the suggestion below it, and ↓ Return picks that suggestion. Clicking the row runs the line too (needs the Accessibility permission).
+
+### Fixed
+
+- Return after an accepted suggestion no longer inserts a longer history line instead of running the command.
+- bash: after Return inserted a suggestion, the next key acted on the suggestions for the line before it, so a second Return could insert `cu.cu.p`.
+
 ## [0.3.3] - 2026-11-16
 
 ### Changed

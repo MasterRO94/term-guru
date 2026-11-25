@@ -12,6 +12,14 @@ final class KeyTap {
         CGEventSource.flagsState(.combinedSessionState).contains(.maskCommand)
     }
 
+    /// Goes to the terminal in front, which keeps focus because the popup never becomes key.
+    static func pressReturn() {
+        guard AXIsProcessTrusted() else { return }
+        for down in [true, false] {
+            CGEvent(keyboardEventSource: nil, virtualKey: 36, keyDown: down)?.post(tap: .cghidEventTap)
+        }
+    }
+
     // Retried on demand: the Accessibility permission can be granted while the app runs.
     func ensure() {
         guard port == nil, AXIsProcessTrusted() else { return }

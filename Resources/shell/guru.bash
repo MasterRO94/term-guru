@@ -91,6 +91,8 @@ _guru_key() {
   [[ $name == up || $name == down ]] && (( pass )) && _guru_recalled=1
   # bash has no preexec: tell the app the line is running, so late suggestions for it stay hidden.
   [[ $name == enter ]] && (( pass )) && _guru_send X
+  # Enter has no trailing hook in its binding, so report a line it changed here, or the next key acts on stale rows.
+  (( pass )) || _guru_hook
   for map in emacs vi-insert; do
     bind -m "$map" "\"\C-x\C-_2${name}\": ${action}"
   done

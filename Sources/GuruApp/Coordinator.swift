@@ -189,7 +189,7 @@ final class Coordinator {
             let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
             let request = EngineRequest(buffer: buffer, cursor: buffer.count, cwd: cwd, path: path)
             engineQueue.async { [engine] in
-                let items = engine.suggest(request)
+                let items = RunSuggestion.promote(engine.suggest(request), buffer: buffer, cursor: buffer.count)
                 DispatchQueue.main.async {
                     self.popup.show(items)
                     self.popup.model.move(1)
@@ -221,7 +221,7 @@ final class Coordinator {
             session.dismissedBuffer = nil
         }
         engineQueue.async { [engine] in
-            let items = engine.suggest(request)
+            let items = RunSuggestion.promote(engine.suggest(request), buffer: request.buffer, cursor: request.cursor)
             DispatchQueue.main.async { [weak self] in
                 guard let self, current == self.generation, session === self.active else { return }
                 self.present(items, session: session, word: word)
@@ -293,9 +293,13 @@ final class Coordinator {
             session.connection.send("N")
         case "tab":
             session.connection.send(insertion(item))
+        case "enter" where item.kind == .run:
+            hide()
+            session.connection.send("P")
         case "enter" where KeyTap.commandHeld:
             session.connection.send(insertion(item, execute: true))
-        case "enter" where navigated || completes(item, session: session):
+        // An empty word with no run row (a redirect target) still runs the line as typed.
+        case "enter" where navigated || item.replace > 0:
             session.connection.send(insertion(item, execute: enterAction == .execute))
         case "esc":
             session.dismissedBuffer = session.buffer
@@ -307,16 +311,16 @@ final class Coordinator {
         }
     }
 
-    // Return must still run a finished line: an untouched top row only wins while it adds to the typed word.
-    private func completes(_ item: Suggestion, session: ShellSession) -> Bool {
-        guard item.replace > 0 else { return false }
-        let typed = String(session.buffer.prefix(session.cursor).suffix(item.replace))
-        return typed != item.insert.trimmingCharacters(in: .whitespaces)
-    }
-
     private func pick(_ index: Int) {
         guard let session = active, popup.model.items.indices.contains(index) else { return }
-        session.connection.send(insertion(popup.model.items[index]))
+        let item = popup.model.items[index]
+        guard item.kind == .run else {
+            session.connection.send(insertion(item))
+            return
+        }
+        // Shells act on a line run from the socket only at their next key, so the click types Return instead.
+        hide()
+        KeyTap.pressReturn()
     }
 
     // MARK: Menu bar

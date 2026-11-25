@@ -1,7 +1,7 @@
 import Foundation
 
 public enum SuggestionKind: String, Codable, Sendable {
-    case command, subcommand, option, argument, file, folder, alias, history, script
+    case command, subcommand, option, argument, file, folder, alias, history, script, run
 }
 
 public indirect enum SuggestionIcon: Equatable, Sendable {

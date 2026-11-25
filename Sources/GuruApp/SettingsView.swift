@@ -106,7 +106,7 @@ private struct GeneralPane: View {
             } header: {
                 Text("Keys")
             } footer: {
-                Text("⌘Return always runs the selected suggestion. Return on an empty or already complete word runs the line as typed.")
+                Text("⌘Return always runs the selected suggestion. Return on the ⏎ row runs the line as typed.")
             }
             Section {
                 Toggle("Suggest commands from shell history", isOn: $model.settings.historySuggestions)

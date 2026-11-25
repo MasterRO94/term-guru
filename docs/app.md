@@ -106,8 +106,8 @@ While the popup shows:
 | Key | Action |
 | --- | --- |
 | ↑ / ↓ | Select a suggestion. ↑ on the top row closes the popup and runs the shell's own ↑ (history, or your prefix search binding). Lines recalled with ↑/↓ open the popup only once you edit them, so ↑ ↑ Return works as without TermGuru |
-| Tab | Insert the highlighted suggestion. With no popup, the shell's own completion runs |
-| Return | Insert the highlighted suggestion, or run it, depending on the setting. Runs the line as typed when the current word is empty or already matches the top suggestion and you have not moved with ↑/↓ |
+| Tab | Insert the highlighted suggestion; on the ⏎ row, the one it displaced (the first below it, or the exact match). With no popup, the shell's own completion runs |
+| Return | Insert the highlighted suggestion, or run it, depending on the setting. On the ⏎ row, run the line as typed. That row comes first once the current word is finished: after a space, when the word matches a suggestion exactly, or after a `/` in a path. So `make cu`, ↓ to `cu.p`, Return, Return runs `make cu.p` |
 | ⌘Return | Insert the highlighted suggestion and run it |
 | ⌘I | Show the description beside or below the list. The choice is saved |
 | Esc | Hide the popup until you change the line; moving the cursor or recalling history keeps it hidden. In vi mode it also switches to command mode, in the same press |

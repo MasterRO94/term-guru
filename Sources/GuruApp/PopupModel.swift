@@ -31,6 +31,7 @@ extension SuggestionKind {
         case .alias: "link"
         case .history: "clock.arrow.circlepath"
         case .script: "play.square"
+        case .run: "return"
         }
     }
 
@@ -45,6 +46,7 @@ extension SuggestionKind {
         case .alias: .pink
         case .history: .purple
         case .script: .green
+        case .run: .green
         }
     }
 
@@ -59,6 +61,7 @@ extension SuggestionKind {
         case .alias: "Alias"
         case .history: "History"
         case .script: "Script"
+        case .run: "Run"
         }
     }
 }
